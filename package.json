@@ -1,0 +1,19 @@
+{
+  "name": "gr-web",
+  "version": "0.1.0",
+  "private": true,
+  "license": "BSD-2-Clause",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "pages": "rm -rf docs/assets && npm run build && rsync -a --delete dist/ docs/",
+    "preview": "vite preview",
+    "test": "vitest --run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^6.4.1",
+    "vitest": "^4.0.18"
+  }
+}
