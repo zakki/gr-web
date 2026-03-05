@@ -1,81 +1,65 @@
-// @ts-nocheck
-
 /*
- * $Id: gamemanager.d,v 1.5 2005/09/11 00:47:40 kenta Exp $
- *
- * Copyright 2005 Kenta Cho. Some rights reserved.
+ * Simplified typed game manager for gr-web.
  */
-// D_MODULE: module abagames.gr.gamemanager;
 
-// D_IMPORT: private import std.math;
-// D_IMPORT: private import opengl;
-// D_IMPORT: private import SDL;
-// D_IMPORT: private import abagames.util.vector;
-// D_IMPORT: private import abagames.util.rand;
-// D_IMPORT: private import abagames.util.sdl.gamemanager;
 import { GameManager as SDLGameManager } from "../util/sdl/gamemanager";
-// D_IMPORT: private import abagames.util.sdl.texture;
-// D_IMPORT: private import abagames.util.sdl.input;
-// D_IMPORT: private import abagames.util.sdl.pad;
-// D_IMPORT: private import abagames.util.sdl.twinstick;
-// D_IMPORT: private import abagames.util.sdl.mouse;
-// D_IMPORT: private import abagames.util.sdl.shape;
-// D_IMPORT: private import abagames.gr.prefmanager;
-// D_IMPORT: private import abagames.gr.screen;
-// D_IMPORT: private import abagames.gr.ship;
-// D_IMPORT: private import abagames.gr.field;
-// D_IMPORT: private import abagames.gr.bullet;
-// D_IMPORT: private import abagames.gr.enemy;
-// D_IMPORT: private import abagames.gr.turret;
-// D_IMPORT: private import abagames.gr.stagemanager;
-// D_IMPORT: private import abagames.gr.particle;
-// D_IMPORT: private import abagames.gr.shot;
-// D_IMPORT: private import abagames.gr.crystal;
-// D_IMPORT: private import abagames.gr.letter;
-// D_IMPORT: private import abagames.gr.title;
-// D_IMPORT: private import abagames.gr.soundmanager;
-// D_IMPORT: private import abagames.gr.replay;
-// D_IMPORT: private import abagames.gr.shape;
-// D_IMPORT: private import abagames.gr.reel;
-// D_IMPORT: private import abagames.gr.mouseandpad;
+import { MultipleInputDevice } from "../util/sdl/input";
+import { Pad } from "../util/sdl/pad";
+import { TwinStick } from "../util/sdl/twinstick";
+import { Mouse } from "../util/sdl/mouse";
+import { Screen3D } from "../util/sdl/screen3d";
+import { Field } from "./field";
+import { Ship } from "./ship";
+import { BulletPool } from "./bullet";
+import { EnemyPool } from "./enemy";
+import { Turret } from "./turret";
+import { StageManager } from "./stagemanager";
+import { Fragment, FragmentPool, SmokePool, SparkFragment, SparkFragmentPool, SparkPool, WakePool } from "./particle";
+import { Shot, ShotPool } from "./shot";
+import { Crystal, CrystalPool } from "./crystal";
+import { Letter } from "./letter";
+import { SoundManager } from "./soundmanager";
+import { BulletShape, EnemyShape, TurretShape } from "./shape";
+import { Screen } from "./screen";
+import { TitleManager } from "./title";
+import { ReplayData } from "./replay";
+import { NumIndicator, NumIndicatorPool, NumReel, ScoreReel } from "./reel";
+import { PrefManager } from "./prefmanager";
+import { RecordableMouse } from "./mouse";
+import { RecordableMouseAndPad } from "./mouseandpad";
 
-/**
- * Manage the game state and actor pools.
- */
+const SDLK_ESCAPE = 27;
+const SDL_PRESSED = 1;
+
 export class GameManager extends SDLGameManager {
- // PORT_NOTE[D2TS:visibility-block]:
- // reason: D visibility block syntax is unsupported in TS.
- // original: public:
-  static shipTurnSpeed: number = 1;
-  static shipReverseFire: boolean = false;
- // PORT_NOTE[D2TS:visibility-block]:
- // reason: D visibility block syntax is unsupported in TS.
- // original: private:
-  pad: Pad;
-  twinStick: TwinStick;
-  mouse: Mouse;
-  mouseAndPad: RecordableMouseAndPad;
-  prefManager: PrefManager;
-  screen: Screen;
-  field: Field;
-  ship: Ship;
-  shots: ShotPool;
-  bullets: BulletPool;
-  enemies: EnemyPool;
-  sparks: SparkPool;
-  smokes: SmokePool;
-  fragments: FragmentPool;
-  sparkFragments: SparkFragmentPool;
-  wakes: WakePool;
-  crystals: CrystalPool;
-  numIndicators: NumIndicatorPool;
-  stageManager: StageManager;
-  titleManager: TitleManager;
-  scoreReel: ScoreReel;
-  state: GameState;
-  titleState: TitleState;
-  inGameState: InGameState;
-  escPressed: boolean;
+  public static shipTurnSpeed = 1;
+  public static shipReverseFire = false;
+
+  public pad!: Pad;
+  public twinStick!: TwinStick;
+  public mouse!: RecordableMouse;
+  public mouseAndPad!: RecordableMouseAndPad;
+  public prefManager!: PrefManager;
+  public screen!: Screen;
+  public field!: Field;
+  public ship!: Ship;
+  public shots!: ShotPool;
+  public bullets!: BulletPool;
+  public enemies!: EnemyPool;
+  public sparks!: SparkPool;
+  public smokes!: SmokePool;
+  public fragments!: FragmentPool;
+  public sparkFragments!: SparkFragmentPool;
+  public wakes!: WakePool;
+  public crystals!: CrystalPool;
+  public numIndicators!: NumIndicatorPool;
+  public stageManager!: StageManager;
+  public titleManager!: TitleManager;
+  public scoreReel!: ScoreReel;
+  public state!: GameState;
+  public titleState!: TitleState;
+  public inGameState!: InGameState;
+  private escPressed = false;
 
   public override init(): void {
     Letter.init();
@@ -87,83 +71,113 @@ export class GameManager extends SDLGameManager {
     Fragment.init();
     SparkFragment.init();
     Crystal.init();
-    this.prefManager = /* D_CAST(PrefManager) */ abstPrefManager;
-    this.screen = /* D_CAST(Screen) */ abstScreen;
-    this.pad = /* D_CAST(Pad) */ (/* D_CAST(MultipleInputDevice) */ input).inputs[0];
-    this.twinStick = /* D_CAST(TwinStick) */ (/* D_CAST(MultipleInputDevice) */ input).inputs[1];
-    this.twinStick.openJoystick(this.pad.openJoystick());
-    this.mouse = /* D_CAST(Mouse) */ (/* D_CAST(MultipleInputDevice) */ input).inputs[2];
-    this.mouse.init(this.screen);
+
+    this.prefManager = this.abstPrefManager as PrefManager;
+    this.screen = this.abstScreen as Screen;
+
+    const input = this.input as MultipleInputDevice;
+    this.pad = (input.inputs[0] ?? new Pad()) as Pad;
+    this.twinStick = (input.inputs[1] ?? new TwinStick()) as TwinStick;
+    this.mouse =
+      (input.inputs[2] ??
+        new RecordableMouse({
+          get width() {
+            return Screen3D.width;
+          },
+          get height() {
+            return Screen3D.height;
+          },
+        })) as RecordableMouse;
+
+    this.pad.openJoystick();
+    this.twinStick.openJoystick();
+    this.mouse.init();
     this.mouseAndPad = new RecordableMouseAndPad(this.mouse, this.pad);
+
     this.field = new Field();
-    let pargs: unknown[];
-    this.sparks = new SparkPool(120, pargs);
-    pargs.push(field); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    this.wakes = new WakePool(100, pargs);
-    pargs.push(wakes); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    this.smokes = new SmokePool(200, pargs);
-    let fargs: unknown[];
-    fargs.push(field); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    fargs.push(smokes); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    this.fragments = new FragmentPool(60, fargs);
-    this.sparkFragments = new SparkFragmentPool(40, fargs);
-    this.ship = new Ship(this.pad, this.twinStick, this.mouse, this.mouseAndPad,
-                    this.field, this.screen, this.sparks, this.smokes, this.fragments, this.wakes);
-    let cargs: unknown[];
-    cargs.push(ship); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    let crystals: CrystalPool = new CrystalPool(80, cargs);
+    this.sparks = new SparkPool(120, null);
+    this.wakes = new WakePool(100, [this.field]);
+    this.smokes = new SmokePool(200, [this.field]);
+    this.fragments = new FragmentPool(60, [this.field, this.smokes]);
+    this.sparkFragments = new SparkFragmentPool(40, [this.field, this.smokes]);
+
+    this.ship = new Ship(
+      this.pad,
+      this.twinStick,
+      this.mouse,
+      this.mouseAndPad,
+      this.field,
+      this.screen,
+      this.sparks,
+      this.smokes,
+      this.fragments,
+      this.wakes,
+    );
+
+    this.crystals = new CrystalPool(80, [this.ship]);
     this.scoreReel = new ScoreReel();
-    let nargs: unknown[];
-    nargs.push(scoreReel); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    let numIndicators: NumIndicatorPool = new NumIndicatorPool(50, nargs);
-    let bargs: unknown[];
-    bargs.push(this); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    bargs.push(field); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    bargs.push(ship); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    bargs.push(smokes); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    bargs.push(wakes); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    bargs.push(crystals); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    this.bullets = new BulletPool(240, bargs);
-    let eargs: unknown[];
-    eargs.push(field); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    eargs.push(screen); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    eargs.push(bullets); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    eargs.push(ship); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    eargs.push(sparks); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    eargs.push(smokes); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    eargs.push(fragments); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    eargs.push(sparkFragments); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    eargs.push(numIndicators); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    eargs.push(scoreReel); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    this.enemies = new EnemyPool(40, eargs);
-    let sargs: unknown[];
-    sargs.push(field); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    sargs.push(enemies); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    sargs.push(sparks); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    sargs.push(smokes); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    sargs.push(bullets); // PORT_NOTE[D2TS:append-op] D '~=' converted to push()
-    this.shots = new ShotPool(50, sargs);
+    this.numIndicators = new NumIndicatorPool(50, [this.scoreReel]);
+
+    this.bullets = new BulletPool(240, [this, this.field, this.ship, this.smokes, this.wakes, this.crystals]);
+    this.enemies = new EnemyPool(40, [
+      this.field,
+      this.screen,
+      this.bullets,
+      this.ship,
+      this.sparks,
+      this.smokes,
+      this.fragments,
+      this.sparkFragments,
+      this.numIndicators,
+      this.scoreReel,
+    ]);
+    this.shots = new ShotPool(50, [this.field, this.enemies, this.sparks, this.smokes, this.bullets]);
+
     this.ship.setShots(this.shots);
     this.ship.setEnemies(this.enemies);
-    this.stageManager = new StageManager(this.field, this.enemies, this.ship, this.bullets,
-                                    this.sparks, this.smokes, this.fragments, this.wakes);
+
+    this.stageManager = new StageManager(
+      this.field,
+      this.enemies,
+      this.ship,
+      this.bullets,
+      this.sparks,
+      this.smokes,
+      this.fragments,
+      this.wakes,
+    );
+
     this.ship.setStageManager(this.stageManager);
     this.field.setStageManager(this.stageManager);
     this.field.setShip(this.ship);
     this.enemies.setStageManager(this.stageManager);
+
     SoundManager.loadSounds();
+
     this.titleManager = new TitleManager(this.prefManager, this.pad, this.mouse, this.field, this);
-    this.inGameState = new InGameState(this, this.screen, this.pad, this.twinStick, this.mouse, this.mouseAndPad,
-                                  this.field, this.ship, this.shots, this.bullets, this.enemies,
-                                  this.sparks, this.smokes, this.fragments, this.sparkFragments, this.wakes,
-                                  crystals, numIndicators, this.stageManager, this.scoreReel,
-                                  this.prefManager);
-    this.titleState = new TitleState(this, this.screen, this.pad, this.twinStick, this.mouse, this.mouseAndPad,
-                                this.field, this.ship, this.shots, this.bullets, this.enemies,
-                                this.sparks, this.smokes, this.fragments, this.sparkFragments, this.wakes,
-                                crystals, numIndicators, this.stageManager, this.scoreReel,
-                                this.titleManager, this.inGameState);
+    this.inGameState = new InGameState(
+      this,
+      this.screen,
+      this.field,
+      this.ship,
+      this.shots,
+      this.bullets,
+      this.enemies,
+      this.sparks,
+      this.smokes,
+      this.fragments,
+      this.sparkFragments,
+      this.wakes,
+      this.crystals,
+      this.numIndicators,
+      this.stageManager,
+      this.scoreReel,
+      this.prefManager,
+    );
+    this.titleState = new TitleState(this, this.field, this.titleManager, this.inGameState);
     this.ship.setGameState(this.inGameState);
+
+    (globalThis as unknown as { InGameState?: typeof InGameState }).InGameState = InGameState;
   }
 
   public override close(): void {
@@ -183,68 +197,49 @@ export class GameManager extends SDLGameManager {
     this.startTitle();
   }
 
-  public startTitle(fromGameover: boolean = false): void {
-    if (fromGameover)
-      this.saveLastReplay();
+  public startTitle(fromGameover = false): void {
+    if (fromGameover) this.saveLastReplay();
     this.titleState.replayData = this.inGameState.replayData;
     this.state = this.titleState;
-    this.startState();
+    this.state.start();
   }
 
   public startInGame(gameMode: number): void {
     this.state = this.inGameState;
     this.inGameState.gameMode = gameMode;
-    this.startState();
-  }
-
-  private startState(): void {
     this.state.start();
   }
 
   public saveErrorReplay(): void {
-    if (this.state == this.inGameState)
-      inGameState.saveReplay("error.rpl");
+    if (this.state === this.inGameState) this.inGameState.saveReplay("error.rpl");
   }
 
   private saveLastReplay(): void {
     try {
-      inGameState.saveReplay("last.rpl");
-    } catch (o) /* PORT_NOTE[D2TS:catch-type] D catch type was removed */ {}
+      this.inGameState.saveReplay("last.rpl");
+    } catch {
+      // ignore
+    }
   }
 
   private loadLastReplay(): void {
     try {
-      inGameState.loadReplay("last.rpl");
-    } catch (o) /* PORT_NOTE[D2TS:catch-type] D catch type was removed */ {
+      this.inGameState.loadReplay("last.rpl");
+    } catch {
       this.inGameState.resetReplay();
     }
   }
 
-  private loadErrorReplay(): void {
-    try {
-      inGameState.loadReplay("error.rpl");
-    } catch (o) /* PORT_NOTE[D2TS:catch-type] D catch type was removed */ {
-      this.inGameState.resetReplay();
-    }
-  }
+  public initInterval(): void {}
 
-  public initInterval(): void {
-    mainLoop.initInterval();
-  }
-
-  public addSlowdownRatio(sr: number): void {
-    mainLoop.addSlowdownRatio(sr);
-  }
+  public addSlowdownRatio(_sr: number): void {}
 
   public override move(): void {
-    if (this.pad.keys[SDLK_ESCAPE] == SDL_PRESSED) {
+    if (this.pad.keys[SDLK_ESCAPE] === SDL_PRESSED) {
       if (!this.escPressed) {
         this.escPressed = true;
-        if (this.state == this.inGameState) {
-          this.startTitle();
-        } else {
-          mainLoop.breakLoop();
-        }
+        if (this.state === this.inGameState) this.startTitle();
+        else this.mainLoop.breakLoop();
         return;
       }
     } else {
@@ -254,97 +249,74 @@ export class GameManager extends SDLGameManager {
   }
 
   public override draw(): void {
-    let e: SDL_Event = mainLoop.event;
-    if (e.type == SDL_VIDEORESIZE) {
-      let re: SDL_ResizeEvent = e.resize;
-      if (re.w > 150 && re.h > 100)
-        this.screen.resized(re.w, re.h);
-   }
-   if (this.screen.startRenderToLuminousScreen()) {
-      glPushMatrix();
-      this.screen.setEyepos();
-      this.state.drawLuminous();
-      glPopMatrix();
-      this.screen.endRenderToLuminousScreen();
-    }
-    this.screen.clear();
-    glPushMatrix();
-    this.screen.setEyepos();
     this.state.draw();
-    glPopMatrix();
-    this.screen.drawLuminous();
-    glPushMatrix();
-    this.screen.setEyepos();
-    this.field.drawSideWalls();
-    this.state.drawFront();
-    glPopMatrix();
-    this.screen.viewOrthoFixed();
-    this.state.drawOrtho();
-    this.screen.viewPerspective();
   }
 }
 
-/**
- * Manage the game state.
- * (e.g. title, in game, gameover, pause, ...)
- */
-export class GameState {
- // PORT_NOTE[D2TS:visibility-block]:
- // reason: D visibility block syntax is unsupported in TS.
- // original: protected:
-  gameManager: GameManager;
-  screen: Screen;
-  pad: Pad;
-  twinStick: TwinStick;
-  mouse: Mouse;
-  mouseAndPad: RecordableMouseAndPad;
-  field: Field;
-  ship: Ship;
-  shots: ShotPool;
-  bullets: BulletPool;
-  enemies: EnemyPool;
-  sparks: SparkPool;
-  smokes: SmokePool;
-  fragments: FragmentPool;
-  sparkFragments: SparkFragmentPool;
-  wakes: WakePool;
-  crystals: CrystalPool;
-  numIndicators: NumIndicatorPool;
-  stageManager: StageManager;
-  scoreReel: ScoreReel;
-  _replayData: ReplayData;
+export abstract class GameState {
+  protected readonly gameManager: GameManager;
+  protected readonly field: Field;
 
-  public constructor(gameManager: GameManager, screen: Screen, pad: Pad, twinStick: TwinStick, mouse: Mouse, mouseAndPad: RecordableMouseAndPad, field: Field, ship: Ship, shots: ShotPool, bullets: BulletPool, enemies: EnemyPool, sparks: SparkPool, smokes: SmokePool, fragments: FragmentPool, sparkFragments: SparkFragmentPool, wakes: WakePool, crystals: CrystalPool, numIndicators: NumIndicatorPool, stageManager: StageManager, scoreReel: ScoreReel) {
+  public constructor(gameManager: GameManager, field: Field) {
     this.gameManager = gameManager;
-    this.screen = screen;
-    this.pad = pad;
-    this.twinStick = twinStick;
-    this.mouse = mouse;
-    this.mouseAndPad = mouseAndPad;
     this.field = field;
-    this.ship = ship;
-    this.shots = shots;
-    this.bullets = bullets;
-    this.enemies = enemies;
-    this.sparks = sparks;
-    this.smokes = smokes;
-    this.fragments = fragments;
-    this.sparkFragments = sparkFragments;
-    this.wakes = wakes;
-    this.crystals = crystals;
-    this.numIndicators = numIndicators;
-    this.stageManager = stageManager;
-    this.scoreReel = scoreReel;
   }
 
   public abstract start(): void;
   public abstract move(): void;
   public abstract draw(): void;
-  public abstract drawLuminous(): void;
-  public abstract drawFront(): void;
-  public abstract drawOrtho(): void;
 
-  protected clearAll(): void {
+  public close(): void {}
+}
+
+export class InGameState extends GameState {
+  public static readonly GameMode = {
+    NORMAL: 0,
+    TWIN_STICK: 1,
+    DOUBLE_PLAY: 2,
+    MOUSE: 3,
+  } as const;
+  public static readonly GAME_MODE_NUM = 4;
+  public static readonly gameModeText = ["NORMAL", "TWIN STICK", "DOUBLE PLAY", "MOUSE"];
+
+  private static readonly SCORE_REEL_SIZE_DEFAULT = 0.8;
+  private static readonly SCORE_REEL_SIZE_SMALL = 0.45;
+
+  public replayData: ReplayData | null = null;
+  private _gameMode: number = InGameState.GameMode.NORMAL;
+  private seed = 0;
+  private scoreReelSize = InGameState.SCORE_REEL_SIZE_DEFAULT;
+
+  public constructor(
+    gameManager: GameManager,
+    private readonly screen: Screen,
+    field: Field,
+    private readonly ship: Ship,
+    private readonly shots: ShotPool,
+    private readonly bullets: BulletPool,
+    private readonly enemies: EnemyPool,
+    private readonly sparks: SparkPool,
+    private readonly smokes: SmokePool,
+    private readonly fragments: FragmentPool,
+    private readonly sparkFragments: SparkFragmentPool,
+    private readonly wakes: WakePool,
+    private readonly crystals: CrystalPool,
+    private readonly numIndicators: NumIndicatorPool,
+    private readonly stageManager: StageManager,
+    private readonly scoreReel: ScoreReel,
+    private readonly prefManager: PrefManager,
+  ) {
+    super(gameManager, field);
+  }
+
+  public start(): void {
+    this.seed = (Date.now() & 0x7fffffff) >>> 0;
+
+    this.field.start();
+    this.ship.setReplayMode(GameManager.shipTurnSpeed, GameManager.shipReverseFire);
+    this.ship.start(this._gameMode);
+    this.stageManager.start(1);
+
     this.shots.clear();
     this.bullets.clear();
     this.enemies.clear();
@@ -355,286 +327,92 @@ export class GameState {
     this.wakes.clear();
     this.crystals.clear();
     this.numIndicators.clear();
-  }
-
-  public set replayData(v: ReplayData) {
-    this._replayData = v;
-  }
-
-  public get replayData(): ReplayData {
-    return this._replayData;
-  }
-}
-
-export class InGameState extends GameState {
- // PORT_NOTE[D2TS:visibility-block]:
- // reason: D visibility block syntax is unsupported in TS.
- // original: public:
-  static readonly GameMode = {
-    NORMAL: 0,
-    TWIN_STICK: 1,
-    DOUBLE_PLAY: 2,
-    MOUSE: 3
-  } as const;
-  static GAME_MODE_NUM: number = 4;
-  static gameModeText: string[][] = ["NORMAL", "TWIN STICK", "DOUBLE PLAY", "MOUSE"];
-  isGameOver: boolean;
- // PORT_NOTE[D2TS:visibility-block]:
- // reason: D visibility block syntax is unsupported in TS.
- // original: private:
-  static readonly SCORE_REEL_SIZE_DEFAULT: number = 0.5;
-  static readonly SCORE_REEL_SIZE_SMALL: number = 0.01;
-  rand: Rand;
-  prefManager: PrefManager;
-  left: number;
-  time: number;
-  gameOverCnt: number;
-  btnPressed: boolean;
-  pauseCnt: number;
-  pausePressed: boolean;
-  scoreReelSize: number;
-  _gameMode: number;
-
-  // PORT_NOTE[D2TS:invariant]: removed D invariant block
-
-  public constructor(gameManager: GameManager, screen: Screen, pad: Pad, twinStick: TwinStick, mouse: Mouse, mouseAndPad: RecordableMouseAndPad, field: Field, ship: Ship, shots: ShotPool, bullets: BulletPool, enemies: EnemyPool, sparks: SparkPool, smokes: SmokePool, fragments: FragmentPool, sparkFragments: SparkFragmentPool, wakes: WakePool, crystals: CrystalPool, numIndicators: NumIndicatorPool, stageManager: StageManager, scoreReel: ScoreReel, prefManager: PrefManager) {
-    super(gameManager, screen, pad, twinStick, mouse, mouseAndPad,
-          field, ship, shots, bullets, enemies,
-          sparks, smokes, fragments, sparkFragments, wakes, crystals, numIndicators,
-          stageManager, scoreReel);
-    this.prefManager = prefManager;
-    this.rand = new Rand();
-    _replayData = null;
-    this.left = 0;
-    this.gameOverCnt = this.pauseCnt = 0;
-    this.scoreReelSize = InGameState.SCORE_REEL_SIZE_DEFAULT;
-  }
-
-  public override start(): void {
-    ship.unsetReplayMode();
-    _replayData = new ReplayData();
-    this.prefManager.prefData.recordGameMode(this._gameMode);
-    switch (this._gameMode) {
-    case GameMode.NORMAL:
-      let rp: RecordablePad = /* D_CAST(RecordablePad) */ pad;
-      rp.startRecord();
-      _replayData.padInputRecord = rp.inputRecord;
-      break;
-    case GameMode.TWIN_STICK:
-    case GameMode.DOUBLE_PLAY:
-      let rts: RecordableTwinStick = /* D_CAST(RecordableTwinStick) */ twinStick;
-      rts.startRecord();
-      _replayData.twinStickInputRecord = rts.inputRecord;
-      break;
-    case GameMode.MOUSE:
-      mouseAndPad.startRecord();
-      _replayData.mouseAndPadInputRecord = mouseAndPad.inputRecord;
-      break;
-    }
-    _replayData.seed = this.rand.nextInt32();
-    _replayData.shipTurnSpeed = GameManager.shipTurnSpeed;
-    _replayData.shipReverseFire = GameManager.shipReverseFire;
-    _replayData.gameMode = this._gameMode;
-    SoundManager.enableBgm();
-    SoundManager.enableSe();
-    this.startInGame();
-  }
-
-  public startInGame(): void {
-    clearAll();
-    let seed: number = _replayData.seed;
-    field.setRandSeed(seed);
-    EnemyState.setRandSeed(seed);
-    EnemySpec.setRandSeed(seed);
-    Turret.setRandSeed(seed);
-    Spark.setRandSeed(seed);
-    Smoke.setRandSeed(seed);
-    Fragment.setRandSeed(seed);
-    SparkFragment.setRandSeed(seed);
-    Screen.setRandSeed(seed);
-    BaseShape.setRandSeed(seed);
-    ship.setRandSeed(seed);
-    Shot.setRandSeed(seed);
-    stageManager.setRandSeed(seed);
-    NumReel.setRandSeed(seed);
-    NumIndicator.setRandSeed(seed);
-    SoundManager.setRandSeed(seed);
-    stageManager.start(1);
-    field.start();
-    ship.start(this._gameMode);
-    this.initGameState();
-    screen.setScreenShake(0, 0);
-    this.gameOverCnt = 0;
-    this.pauseCnt = 0;
-    this.scoreReelSize = InGameState.SCORE_REEL_SIZE_DEFAULT;
-    this.isGameOver = false;
-    SoundManager.playBgm();
-  }
-
-  private initGameState(): void {
-    this.time = 0;
-    this.left = 2;
-    scoreReel.clear(9);
+    this.scoreReel.clear(9);
     NumIndicator.initTargetY();
+
+    this.scoreReelSize = InGameState.SCORE_REEL_SIZE_DEFAULT;
+    this.replayData = new ReplayData();
+    this.replayData.gameMode = this._gameMode;
+    this.replayData.seed = this.seed;
+    this.replayData.shipTurnSpeed = GameManager.shipTurnSpeed;
+    this.replayData.shipReverseFire = GameManager.shipReverseFire;
   }
 
-  public override move(): void {
-    if (pad.keys[SDLK_p] == SDL_PRESSED) {
-      if (!this.pausePressed) {
-        if (this.pauseCnt <= 0 && !this.isGameOver)
-          this.pauseCnt = 1;
-        else
-          this.pauseCnt = 0;
-      }
-      this.pausePressed = true;
-    } else {
-      this.pausePressed = false;
-    }
-    if (this.pauseCnt > 0) {
-      this.pauseCnt++;
-      return;
-    }
-    this.moveInGame();
-    if (this.isGameOver) {
-      this.gameOverCnt++;
-      let input: PadState = (/* D_CAST(RecordablePad) */ pad).getState(false);
-      let mouseInput: MouseState = (/* D_CAST(RecordableMouse) */ mouse).getState(false);
-      if ((input.button & PadState.Button.A) ||
-          (gameMode == InGameState.GameMode.MOUSE &&
-           (mouseInput.button & MouseState.Button.LEFT))) {
-        if (this.gameOverCnt > 60 && !this.btnPressed)
-          gameManager.startTitle(true);
-        this.btnPressed = true;
-      } else {
-        this.btnPressed = false;
-      }
-      if (this.gameOverCnt == 120) {
-        SoundManager.fadeBgm();
-        SoundManager.disableBgm();
-      }
-      if (this.gameOverCnt > 1200)
-        gameManager.startTitle(true);
-    }
-  }
+  public move(): void {
+    this.screen.move();
+    this.stageManager.move();
+    this.ship.move();
 
-  public moveInGame(): void {
-    field.move();
-    ship.move();
-    stageManager.move();
-    enemies.move();
-    shots.move();
-    bullets.move();
-    crystals.move();
-    numIndicators.move();
-    sparks.move();
-    smokes.move();
-    fragments.move();
-    sparkFragments.move();
-    wakes.move();
-    screen.move();
+    this.shots.move();
+    this.bullets.move();
+    this.enemies.move();
+    this.crystals.move();
+    this.sparks.move();
+    this.smokes.move();
+    this.fragments.move();
+    this.sparkFragments.move();
+    this.wakes.move();
+    this.numIndicators.move();
+
+    this.scoreReel.move();
     this.scoreReelSize += (InGameState.SCORE_REEL_SIZE_DEFAULT - this.scoreReelSize) * 0.05;
-    scoreReel.move();
-    if (!this.isGameOver)
-      this.time += 17;
+
     SoundManager.playMarkedSe();
-  }
 
-  public override draw(): void {
-    field.draw();
-    glBegin(GL_TRIANGLES);
-    wakes.draw();
-    sparks.draw();
-    glEnd();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBegin(GL_QUADS);
-    smokes.draw();
-    glEnd();
-    fragments.draw();
-    sparkFragments.draw();
-    crystals.draw();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    enemies.draw();
-    shots.draw();
-    ship.draw();
-    bullets.draw();
-  }
-
-  public drawFront(): void {
-    ship.drawFront();
-    scoreReel.draw(11.5 + (InGameState.SCORE_REEL_SIZE_DEFAULT - this.scoreReelSize) * 3,
-                   -8.2 - (InGameState.SCORE_REEL_SIZE_DEFAULT - this.scoreReelSize) * 3,
-                   this.scoreReelSize);
-    let x: number = -12;
-    for (let i = 0; i < this.left; i++) {
-      glPushMatrix();
-      glTranslatef(x, -9, 0);
-      glScalef(0.7, 0.7, 0.7);
-      ship.drawShape();
-      glPopMatrix();
-      x += 0.7;
+    const score = this.scoreReel.actualScore;
+    if (score > this.prefManager.prefData.highScore(this._gameMode)) {
+      this.prefManager.prefData.recordResult(score, this._gameMode);
     }
-    numIndicators.draw();
   }
 
-  public drawGameParams(): void {
-    stageManager.draw();
-  }
+  public draw(): void {
+    this.screen.setEyepos();
+    this.field.drawSideWalls();
+    this.field.draw();
 
-  public drawOrtho(): void {
-    this.drawGameParams();
-    if (this.isGameOver)
-      Letter.drawString("GAME OVER", 190, 180, 15);
-    if (this.pauseCnt > 0 && (this.pauseCnt % 64) < 32)
-      Letter.drawString("PAUSE", 265, 210, 12);
-  }
+    this.wakes.draw();
+    this.smokes.draw();
+    this.fragments.draw();
+    this.sparkFragments.draw();
+    this.sparks.draw();
 
-  public override drawLuminous(): void {
-    glBegin(GL_TRIANGLES);
-    sparks.drawLuminous();
-    glEnd();
-    sparkFragments.drawLuminous();
-    glBegin(GL_QUADS);
-    smokes.drawLuminous();
-    glEnd();
-  }
+    this.crystals.draw();
+    this.bullets.draw();
+    this.enemies.draw();
+    this.shots.draw();
 
-  public shipDestroyed(): void {
-    this.clearBullets();
-    stageManager.shipDestroyed();
-    gameManager.initInterval();
-    this.left--;
-    if (this.left < 0) {
-      this.isGameOver = true;
-      this.btnPressed = true;
-      SoundManager.fadeBgm();
-      scoreReel.accelerate();
-      if (!ship.replayMode) {
-        SoundManager.disableSe();
-        this.prefManager.prefData.recordResult(scoreReel.actualScore, this._gameMode);
-        _replayData.score = scoreReel.actualScore;
-      }
-    }
+    this.ship.draw();
+    this.ship.drawFront();
+    this.numIndicators.draw();
+    this.scoreReel.draw(11.5, -8.2, this.scoreReelSize);
   }
 
   public clearBullets(): void {
-    bullets.clear();
+    this.bullets.clear();
   }
 
   public shrinkScoreReel(): void {
     this.scoreReelSize += (InGameState.SCORE_REEL_SIZE_SMALL - this.scoreReelSize) * 0.08;
   }
 
-  public saveReplay(fileName: string[]): void {
-    _replayData.save(fileName);
+  public saveReplay(name: string): void {
+    if (!this.replayData) this.replayData = new ReplayData();
+    this.replayData.seed = this.seed;
+    this.replayData.score = this.scoreReel.actualScore;
+    this.replayData.gameMode = this._gameMode;
+    this.replayData.shipTurnSpeed = GameManager.shipTurnSpeed;
+    this.replayData.shipReverseFire = GameManager.shipReverseFire;
+    this.replayData.save(name);
   }
 
-  public loadReplay(fileName: string[]): void {
-    _replayData = new ReplayData();
-    _replayData.load(fileName);
+  public loadReplay(name: string): void {
+    const rd = new ReplayData();
+    rd.load(name);
+    this.replayData = rd;
   }
 
   public resetReplay(): void {
-    _replayData = null;
+    this.replayData = null;
   }
 
   public get gameMode(): number {
@@ -642,98 +420,50 @@ export class InGameState extends GameState {
   }
 
   public set gameMode(v: number) {
-    this._gameMode = v;
+    if (v < 0) this._gameMode = 0;
+    else if (v >= InGameState.GAME_MODE_NUM) this._gameMode = InGameState.GAME_MODE_NUM - 1;
+    else this._gameMode = v;
   }
 }
 
 export class TitleState extends GameState {
- // PORT_NOTE[D2TS:visibility-block]:
- // reason: D visibility block syntax is unsupported in TS.
- // original: private:
-  titleManager: TitleManager;
-  inGameState: InGameState;
-  gameOverCnt: number;
+  private _replayData: ReplayData | null = null;
 
-  // PORT_NOTE[D2TS:invariant]: removed D invariant block
-
-  public constructor(gameManager: GameManager, screen: Screen, pad: Pad, twinStick: TwinStick, mouse: Mouse, mouseAndPad: RecordableMouseAndPad, field: Field, ship: Ship, shots: ShotPool, bullets: BulletPool, enemies: EnemyPool, sparks: SparkPool, smokes: SmokePool, fragments: FragmentPool, sparkFragments: SparkFragmentPool, wakes: WakePool, crystals: CrystalPool, numIndicators: NumIndicatorPool, stageManager: StageManager, scoreReel: ScoreReel, titleManager: TitleManager, inGameState: InGameState) {
-    super(gameManager, screen, pad, twinStick, mouse, mouseAndPad,
-          field, ship, shots, bullets, enemies,
-          sparks, smokes, fragments, sparkFragments, wakes, crystals, numIndicators,
-          stageManager, scoreReel);
-    this.titleManager = titleManager;
-    this.inGameState = inGameState;
-    this.gameOverCnt = 0;
+  public constructor(
+    gameManager: GameManager,
+    field: Field,
+    private readonly titleManager: TitleManager,
+    private readonly inGameState: InGameState,
+  ) {
+    super(gameManager, field);
   }
 
-  public close(): void {
-    this.titleManager.close();
-  }
-
-  public override start(): void {
-    SoundManager.haltBgm();
-    SoundManager.disableBgm();
-    SoundManager.disableSe();
+  public start(): void {
+    this.titleManager.replayData = this._replayData;
     this.titleManager.start();
-    if (replayData)
-      this.startReplay();
-    else
-      this.titleManager.replayData = null;
   }
 
-  private startReplay(): void {
-    ship.setReplayMode(_replayData.shipTurnSpeed, _replayData.shipReverseFire);
-    switch (_replayData.gameMode) {
-    case InGameState.GameMode.NORMAL:
-      let rp: RecordablePad = /* D_CAST(RecordablePad) */ pad;
-      rp.startReplay(_replayData.padInputRecord);
-      break;
-    case InGameState.GameMode.TWIN_STICK:
-    case InGameState.GameMode.DOUBLE_PLAY:
-      let rts: RecordableTwinStick = /* D_CAST(RecordableTwinStick) */ twinStick;
-      rts.startReplay(_replayData.twinStickInputRecord);
-      break;
-    case InGameState.GameMode.MOUSE:
-      mouseAndPad.startReplay(_replayData.mouseAndPadInputRecord);
-      break;
-    }
-    this.titleManager.replayData = _replayData;
-    this.inGameState.gameMode = _replayData.gameMode;
-    this.inGameState.startInGame();
-  }
-
-  public override move(): void {
-    if (_replayData) {
-      if (this.inGameState.isGameOver) {
-        this.gameOverCnt++;
-        if (this.gameOverCnt > 120)
-          this.startReplay();
-      }
-      this.inGameState.moveInGame();
-    }
+  public move(): void {
     this.titleManager.move();
   }
 
-  public override draw(): void {
-    if (_replayData) {
-      this.inGameState.draw();
-    } else {
-      field.draw();
-    }
-  }
-
-  public drawFront(): void {
-    if (_replayData)
-      this.inGameState.drawFront();
-  }
-
-  public override drawOrtho(): void {
-    if (_replayData)
-      this.inGameState.drawGameParams();
+  public draw(): void {
+    this.gameManager.screen.setEyepos();
+    this.field.drawSideWalls();
+    this.field.draw();
     this.titleManager.draw();
   }
 
-  public override drawLuminous(): void {
-    this.inGameState.drawLuminous();
+  public override close(): void {
+    this.titleManager.close();
+  }
+
+  public get replayData(): ReplayData | null {
+    return this._replayData;
+  }
+
+  public set replayData(v: ReplayData | null) {
+    this._replayData = v;
+    this.inGameState.replayData = v;
   }
 }
