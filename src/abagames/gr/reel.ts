@@ -180,6 +180,15 @@ export class NumReel {
   }
 }
 
+class NumIndicatorTarget {
+  pos: Vector;
+  flyingTo: number;
+  initialVelRatio: number;
+  size: number;
+  n: number;
+  cnt: number;
+}
+
 /**
  * Flying indicator that shows the score and the multiplier.
  */
@@ -200,15 +209,6 @@ export class NumIndicator extends Actor {
   static readonly TARGET_Y_MAX: number = 7;
   static readonly TARGET_Y_INTERVAL: number = 1;
   static targetY: number;
-  // PORT_NOTE[D2TS:struct]: D struct is converted to class for now.
-  class Target {
-    pos: Vector;
-    flyingTo: number;
-    initialVelRatio: number;
-    size: number;
-    n: number;
-    cnt: number;
-  };
   scoreReel: ScoreReel;
   pos: Vector;
   vel: Vector;
@@ -223,15 +223,15 @@ export class NumIndicator extends Actor {
   size: number;
   cnt: number;
   alpha: number;
-  target: Target[];
+  target: NumIndicatorTarget[];
   targetIdx: number;
   targetNum: number;
 
   // PORT_NOTE[D2TS:invariant]: removed D invariant block
 
   static {
-    rand = new Rand();
-    targetY = TARGET_Y_MIN;
+    NumIndicator.rand = new Rand();
+    NumIndicator.targetY = NumIndicator.TARGET_Y_MIN;
   }
 
   public static setRandSeed(seed: number): void {
@@ -259,8 +259,17 @@ export class NumIndicator extends Actor {
   public constructor() {
     this.pos = new Vector();
     this.vel = new Vector();
-    for (const t of this.target) {
+    this.target = Array.from({ length: 16 }, () => {
+      const t = new NumIndicatorTarget();
       t.pos = new Vector();
+      t.flyingTo = 0;
+      t.initialVelRatio = 0;
+      t.size = 0;
+      t.n = 0;
+      t.cnt = 0;
+      return t;
+    });
+    for (const t of this.target) {
       t.initialVelRatio = 0;
       t.size = 0;
     }

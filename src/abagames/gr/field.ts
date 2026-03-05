@@ -23,7 +23,17 @@ export class PlatformPos {
   pos: Vector;
   deg: number;
   used: boolean;
-};
+}
+
+export class Panel {
+  x: number;
+  y: number;
+  z: number;
+  ci: number;
+  or: number;
+  og: number;
+  ob: number;
+}
 
 /**
  * Game field.
@@ -56,22 +66,6 @@ export class Field {
   readonly SCREEN_BLOCK_SIZE_Y: number = 24;
   readonly BLOCK_WIDTH: number = 1;
   block: number[][];
-  // PORT_NOTE[D2TS:struct]: D struct is converted to class for now.
-  class Panel {
-    x: number;
-    y: number;
-    z: number;
-    // PORT_NOTE[D2TS:multi-decl]:
-    // reason: Split D multi-variable declaration into one-per-line.
-    // original: float x, y, z;
-    ci: number;
-    or: number;
-    og: number;
-    ob: number;
-    // PORT_NOTE[D2TS:multi-decl]:
-    // reason: Split D multi-variable declaration into one-per-line.
-    // original: float or, og, ob;
-  };
   static readonly PANEL_WIDTH: number = 1.8;
   static readonly PANEL_HEIGHT_BASE: number = 0.66;
   panel: Panel[][];
@@ -85,7 +79,7 @@ export class Field {
   screenPos: Vector;
   platformPos: PlatformPos[];
   platformPosNum: number;
-  float[3][6][TIME_COLOR_INDEX] baseColorTime = [
+  baseColorTime: number[][][] = [
     [[0.15, 0.15, 0.3], [0.25, 0.25, 0.5], [0.35, 0.35, 0.45],
      [0.6, 0.7, 0.35], [0.45, 0.8, 0.3], [0.2, 0.6, 0.1]],
     [[0.1, 0.1, 0.3], [0.2, 0.2, 0.5], [0.3, 0.3, 0.4],
@@ -106,9 +100,22 @@ export class Field {
     this.rand = new Rand();
     this._size = new Vector(this.SCREEN_BLOCK_SIZE_X / 2 * 0.9, this.SCREEN_BLOCK_SIZE_Y / 2 * 0.8);
     this._outerSize = new Vector(this.SCREEN_BLOCK_SIZE_X / 2, this.SCREEN_BLOCK_SIZE_Y / 2);
+    this.block = Array.from({ length: Field.BLOCK_SIZE_X }, () => Array(Field.BLOCK_SIZE_Y).fill(-3));
+    this.panel = Array.from({ length: Field.BLOCK_SIZE_X }, () =>
+      Array.from({ length: Field.BLOCK_SIZE_Y }, () => new Panel())
+    );
+    this.platformPos = Array.from(
+      { length: this.SCREEN_BLOCK_SIZE_X * Field.NEXT_BLOCK_AREA_SIZE },
+      () => {
+        const pp = new PlatformPos();
+        pp.pos = new Vector();
+        pp.deg = 0;
+        pp.used = false;
+        return pp;
+      }
+    );
+    this.baseColor = Array.from({ length: 6 }, () => Array(3).fill(0));
     this.screenPos = new Vector();
-    for (const pp of this.platformPos)
-      pp.pos = new Vector();
     this._lastScrollY = 0;
     this.platformPosNum = 0;
     this.time = 0;
@@ -141,7 +148,7 @@ export class Field {
   }
 
   private createPanel(x: number, y: number): void {
-    Panel* p = &(this.panel[x][y]);
+    const p = this.panel[x][y];
     p.x = this.rand.nextFloat(1) - 0.75;
     p.y = this.rand.nextFloat(1) - 0.75;
     p.z = this.block[x][y] * Field.PANEL_HEIGHT_BASE + this.rand.nextFloat(Field.PANEL_HEIGHT_BASE);
@@ -330,11 +337,14 @@ export class Field {
       this.nextBlockY += Field.BLOCK_SIZE_Y;
   }
 
-  public getBlock(p: Vector): number {
-    return this.getBlock(p.x, p.y);
-  }
-
-  public getBlock(x: number, y: number): number {
+  public getBlock(arg0: Vector | number, y?: number): number {
+    if (arg0 instanceof Vector) {
+      return this.getBlock(arg0.x, arg0.y);
+    }
+    const x = arg0;
+    if (y == null) {
+      return -1;
+    }
     y -= this.screenY - /* D_CAST(int) */ this.screenY;
     let bx: number;
     let by: number;
@@ -400,7 +410,7 @@ export class Field {
     let co: number = this.time - ci;
     for (let i = 0; i < 6; i++)
       for (let j = 0; j < 3; j++)
-        this.baseColor[i][j] = baseColorTime[ci][i][j] * (1 - co) + baseColorTime[nci][i][j] * co;
+        this.baseColor[i][j] = this.baseColorTime[ci][i][j] * (1 - co) + this.baseColorTime[nci][i][j] * co;
     let by: number = /* D_CAST(int) */ this.screenY;
     let oy: number = this.screenY - by;
     let sx: number;
@@ -415,7 +425,7 @@ export class Field {
         by -= Field.BLOCK_SIZE_Y;
       sx = -this.BLOCK_WIDTH * this.SCREEN_BLOCK_SIZE_X / 2;
       for (let bx = 0; bx < this.SCREEN_BLOCK_SIZE_X; bx++) {
-        Panel* p = &(this.panel[bx][by]);
+        const p = this.panel[bx][by];
         Screen.setColor(this.baseColor[p.ci][0] * p.or * 0.66,
                         this.baseColor[p.ci][1] * p.og * 0.66,
                         this.baseColor[p.ci][2] * p.ob * 0.66);
@@ -495,20 +505,24 @@ export class Field {
     return (this.block[x][by] >= th);
   }
 
-  public checkInField(p: Vector): boolean {
-    return this._size.contains(p);
+  public checkInField(arg0: Vector | number, y?: number): boolean {
+    if (arg0 instanceof Vector) {
+      return this._size.contains(arg0);
+    }
+    if (y == null) {
+      return false;
+    }
+    return this._size.contains(arg0, y);
   }
 
-  public checkInField(x: number, y: number): boolean {
-    return this._size.contains(x, y);
-  }
-
-  public checkInOuterField(p: Vector): boolean {
-    return this._outerSize.contains(p);
-  }
-
-  public checkInOuterField(x: number, y: number): boolean {
-    return this._outerSize.contains(x, y);
+  public checkInOuterField(arg0: Vector | number, y?: number): boolean {
+    if (arg0 instanceof Vector) {
+      return this._outerSize.contains(arg0);
+    }
+    if (y == null) {
+      return false;
+    }
+    return this._outerSize.contains(arg0, y);
   }
 
   public checkInOuterHeightField(p: Vector): boolean {
@@ -541,7 +555,7 @@ export class Field {
     return this._outerSize;
   }
 
-  public lastScrollY(): number {
+  public get lastScrollY(): number {
     return this._lastScrollY;
   }
 }

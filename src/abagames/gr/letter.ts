@@ -329,7 +329,7 @@ export class Letter {
     glVertex3(-width / 3 * 1,  height / 2, 0);
   }
   
-  private static float[5][16][] spData = 
+  private static spData: number[][][] =
     [[
      [0, 1.15, 0.65, 0.3, 0],
      [-0.6, 0.55, 0.65, 0.3, 90], [0.6, 0.55, 0.65, 0.3, 90],

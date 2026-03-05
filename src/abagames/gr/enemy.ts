@@ -806,13 +806,13 @@ export class EnemySpec {
 }
 
 export interface HasAppearType {
-  public setFirstState(es: EnemyState, appType: number): boolean;
+  setFirstState(es: EnemyState, appType: number): boolean;
 }
 
 /**
  * Specification for a small class ship.
  */
-public class SmallShipEnemySpec: EnemySpec, HasAppearType {
+export class SmallShipEnemySpec extends EnemySpec implements HasAppearType {
  // PORT_NOTE[D2TS:visibility-block]:
  // reason: D visibility block syntax is unsupported in TS.
  // original: public:
@@ -988,7 +988,7 @@ public class SmallShipEnemySpec: EnemySpec, HasAppearType {
 /**
  * Specification for a large/middle class ship.
  */
-public class ShipEnemySpec: EnemySpec, HasAppearType {
+export class ShipEnemySpec extends EnemySpec implements HasAppearType {
  // PORT_NOTE[D2TS:visibility-block]:
  // reason: D visibility block syntax is unsupported in TS.
  // original: public:

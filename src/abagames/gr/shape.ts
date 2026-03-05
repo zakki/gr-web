@@ -290,7 +290,7 @@ export class BaseShape extends DrawableShape {
   }
 }
 
-public class CollidableBaseShape: BaseShape, Collidable {
+export class CollidableBaseShape extends BaseShape implements Collidable {
   // PORT_NOTE[D2TS:d-specific-feature]:
   // reason: D-specific feature requires manual rewrite.
   // original: mixin CollidableImpl;
@@ -356,35 +356,26 @@ export class EnemyShape extends ResizableDrawable {
     PLATFORM_DESTROYED: 9,
     PLATFORM_BRIDGE: 10
   } as const;
-  static readonly MIDDLE_COLOR_R: number = 1, MIDDLE_COLOR_G = 0.6, MIDDLE_COLOR_B = 0.5;
+  static readonly MIDDLE_COLOR_R: number = 1;
+  static readonly MIDDLE_COLOR_G: number = 0.6;
+  static readonly MIDDLE_COLOR_B: number = 0.5;
  // PORT_NOTE[D2TS:visibility-block]:
  // reason: D visibility block syntax is unsupported in TS.
  // original: private:
   static shapes: BaseShape[];
 
   public static init(): void {
-    EnemyShape.shapes ~= new BaseShape
-      (1, 0.5, 0.1, BaseShape.ShapeType.SHIP, 0.9, 0.7, 0.5);
-    EnemyShape.shapes ~= new BaseShape
-      (1, 0.5, 0.1, BaseShape.ShapeType.SHIP_DAMAGED, 0.5, 0.5, 0.9);
-    EnemyShape.shapes ~= new CollidableBaseShape
-      (0.66, 0, 0, BaseShape.ShapeType.BRIDGE, 1, 0.2, 0.3);
-    EnemyShape.shapes ~= new BaseShape
-      (1, 0.7, 0.33, BaseShape.ShapeType.SHIP, EnemyShape.MIDDLE_COLOR_R, MIDDLE_COLOR_G, MIDDLE_COLOR_B);
-    EnemyShape.shapes ~= new BaseShape
-      (1, 0.7, 0.33, BaseShape.ShapeType.SHIP_DAMAGED, 0.5, 0.5, 0.9);
-    EnemyShape.shapes ~= new BaseShape
-      (1, 0.7, 0.33, BaseShape.ShapeType.SHIP_DESTROYED, 0, 0, 0);
-    EnemyShape.shapes ~= new CollidableBaseShape
-      (0.66, 0, 0, BaseShape.ShapeType.BRIDGE, 1, 0.2, 0.3);
-    EnemyShape.shapes ~= new BaseShape
-      (1, 0, 0, BaseShape.ShapeType.PLATFORM, 1, 0.6, 0.7);
-    EnemyShape.shapes ~= new BaseShape
-      (1, 0, 0, BaseShape.ShapeType.PLATFORM_DAMAGED, 0.5, 0.5, 0.9);
-    EnemyShape.shapes ~= new BaseShape
-      (1, 0, 0, BaseShape.ShapeType.PLATFORM_DESTROYED, 1, 0.6, 0.7);
-    EnemyShape.shapes ~= new CollidableBaseShape
-      (0.5, 0, 0, BaseShape.ShapeType.BRIDGE, 1, 0.2, 0.3);
+    EnemyShape.shapes.push(new BaseShape(1, 0.5, 0.1, BaseShape.ShapeType.SHIP, 0.9, 0.7, 0.5));
+    EnemyShape.shapes.push(new BaseShape(1, 0.5, 0.1, BaseShape.ShapeType.SHIP_DAMAGED, 0.5, 0.5, 0.9));
+    EnemyShape.shapes.push(new CollidableBaseShape(0.66, 0, 0, BaseShape.ShapeType.BRIDGE, 1, 0.2, 0.3));
+    EnemyShape.shapes.push(new BaseShape(1, 0.7, 0.33, BaseShape.ShapeType.SHIP, EnemyShape.MIDDLE_COLOR_R, EnemyShape.MIDDLE_COLOR_G, EnemyShape.MIDDLE_COLOR_B));
+    EnemyShape.shapes.push(new BaseShape(1, 0.7, 0.33, BaseShape.ShapeType.SHIP_DAMAGED, 0.5, 0.5, 0.9));
+    EnemyShape.shapes.push(new BaseShape(1, 0.7, 0.33, BaseShape.ShapeType.SHIP_DESTROYED, 0, 0, 0));
+    EnemyShape.shapes.push(new CollidableBaseShape(0.66, 0, 0, BaseShape.ShapeType.BRIDGE, 1, 0.2, 0.3));
+    EnemyShape.shapes.push(new BaseShape(1, 0, 0, BaseShape.ShapeType.PLATFORM, 1, 0.6, 0.7));
+    EnemyShape.shapes.push(new BaseShape(1, 0, 0, BaseShape.ShapeType.PLATFORM_DAMAGED, 0.5, 0.5, 0.9));
+    EnemyShape.shapes.push(new BaseShape(1, 0, 0, BaseShape.ShapeType.PLATFORM_DESTROYED, 1, 0.6, 0.7));
+    EnemyShape.shapes.push(new CollidableBaseShape(0.5, 0, 0, BaseShape.ShapeType.BRIDGE, 1, 0.2, 0.3));
   }
 
   public static close(): void {
@@ -518,7 +509,7 @@ export class MovingTurretBulletShape extends DrawableShape {
   }
 }
 
-public class DestructiveBulletShape: DrawableShape, Collidable {
+export class DestructiveBulletShape extends DrawableShape implements Collidable {
   // PORT_NOTE[D2TS:d-specific-feature]:
   // reason: D-specific feature requires manual rewrite.
   // original: mixin CollidableImpl;

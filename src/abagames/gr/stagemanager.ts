@@ -76,7 +76,7 @@ export class StageManager {
     this.enemyApp = new EnemyAppearance[3];
     for (const ea of this.enemyApp)
       ea = new EnemyAppearance();
-    PlatformEnemySpec this.platformEnemySpec =
+    this.platformEnemySpec =
       new PlatformEnemySpec(field, ship, sparks, smokes, fragments, wakes);
     this.rank = this.baseRank = 1;
     this.addRank = this.rankVel = this.rankInc = 0;
@@ -231,8 +231,8 @@ export class StageManager {
     }
     if (!noSmallShip) {
       appType = EnemyState.AppearanceType.TOP;
-      int smallShipNum =
-        /* D_CAST(int) */ (sqrt(3 + tr) * (1 + rand.nextSignedFloat(0.5)) * 2) + 1;
+      let smallShipNum: number =
+        /* D_CAST(int) */ (sqrt(3 + tr) * (1 + this.rand.nextSignedFloat(0.5)) * 2) + 1;
       if (smallShipNum > 256)
         smallShipNum = 256;
       let sses: SmallShipEnemySpec = new SmallShipEnemySpec(this.field, this.ship, this.sparks, this.smokes, this.fragments, this.wakes);
@@ -264,7 +264,7 @@ export class StageManager {
         break;
       platformPos[ppi].used = true;
       ppn--;
-      Vector p = this.field.convertToScreenPos
+      let p: Vector = this.field.convertToScreenPos
         (/* D_CAST(int) */ platformPos[ppi].pos.x, /* D_CAST(int) */ platformPos[ppi].pos.y);
       if (!this.platformEnemySpec.setFirstState(en.state, p.x, p.y, platformPos[ppi].deg))
         continue;

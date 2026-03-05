@@ -183,11 +183,11 @@ export class Bullet extends Actor {
     }
   }
 
-  export function destructive(): boolean {
+  public destructive(): boolean {
     return this._destructive;
   }
 
-  export function enemyIdx(): number {
+  public enemyIdx(): number {
     return this._enemyIdx;
   }
 }

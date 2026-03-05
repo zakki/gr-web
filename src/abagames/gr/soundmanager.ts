@@ -18,16 +18,15 @@
  * Manage BGMs and SEs.
  */
 export class SoundManager extends abagames.util.sdl.sound.SoundManager {
- private static:
-  char[][] seFileName =
+  private static seFileName: string[] =
     ["shot.wav", "lance.wav", "hit.wav",
      "turret_destroyed.wav", "destroyed.wav", "small_destroyed.wav", "explode.wav",
      "ship_destroyed.wav", "ship_shield_lost.wav", "score_up.wav"];
-  int[] seChannel =
+  private static seChannel: number[] =
     [0, 1, 2, 3, 4, 5, 6, 7, 7, 6];
-  bgm: Music[string[]];
-  se: Chunk[string[]];
-  seMark: boolean[string[]];
+  bgm: Record<string, Music>;
+  se: Record<string, Chunk>;
+  seMark: Record<string, boolean>;
   bgmDisabled: boolean = false;
   seDisabled: boolean = false;
   readonly RANDOM_BGM_START_INDEX: number = 1;

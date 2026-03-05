@@ -82,11 +82,9 @@ let mainLoop: MainLoop;
     gc_term();
     return result;
   }
-} else {
-  // Boot as the general executable.
-  export function main(args: string[][]): number {
-    return boot(args);
-  }
+// Boot as the general executable.
+export function main(args: string[][]): number {
+  return boot(args);
 }
 
 export function boot(args: string[][]): number {
@@ -211,19 +209,8 @@ function parseArgs(commandArgs: string[][]): void {
     case "-enableaxis5":
       twinStick.enableAxis5 = true;
       break;
-    /*case "-mouseaccel":
-      if (i >= args.length - 1) {
-        usage(progName);
-        throw new Exception("Invalid options");
-      }
-      i++;
-      let s: number = /* D_CAST(float) */ std.string.atoi(args[i]) / 100;
-      if (s < 0 || s > 5) {
-        usage(progName);
-        throw new Exception("Invalid options");
-      }
-      mouse.accel = s;
-      break;*/
+    // PORT_NOTE[D2TS:commented-option]:
+    // original D source had a disabled "-mouseaccel" option block.
     default:
       usage(progName);
       throw new Exception("Invalid options");
@@ -231,7 +218,7 @@ function parseArgs(commandArgs: string[][]): void {
   }
 }
 
-const OPTIONS_INI_FILE: string[] = "options.ini";
+const OPTIONS_INI_FILE: string = "options.ini";
 
 function readOptionsIniFile(): string[][] {
   try {
