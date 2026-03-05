@@ -358,11 +358,11 @@ export class GameState {
     this.numIndicators.clear();
   }
 
-  public replayData(v: ReplayData): ReplayData {
-    return this._replayData = v;
+  public set replayData(v: ReplayData) {
+    this._replayData = v;
   }
 
-  public replayData(): ReplayData {
+  public get replayData(): ReplayData {
     return this._replayData;
   }
 }
@@ -638,12 +638,12 @@ export class InGameState extends GameState {
     _replayData = null;
   }
 
-  public gameMode(): number {
+  public get gameMode(): number {
     return this._gameMode;
   }
 
-  public gameMode(v: number): number {
-    return this._gameMode = v;
+  public set gameMode(v: number) {
+    this._gameMode = v;
   }
 }
 
