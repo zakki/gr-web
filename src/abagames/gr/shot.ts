@@ -7,58 +7,17 @@
 import { Actor, ActorPool } from "../util/actor";
 import { Vector } from "../util/vector";
 import { Rand } from "../util/rand";
+import { Field } from "./field";
+import { Screen } from "./screen";
+import type { EnemyPool } from "./enemy";
+import type { BulletPool } from "./bullet";
+import { Smoke, type SparkPool, type SmokePool } from "./particle";
+import { SoundManager } from "./soundmanager";
+import { type Collidable, CollidableDrawable } from "./shape";
 
-declare class Collidable {}
-declare class CollidableDrawable extends Collidable {}
-declare class Field {
-  public static readonly ON_BLOCK_THRESHOLD: number;
-  public lastScrollY: number;
-  public getBlock(v: Vector): number;
-  public checkInOuterField(v: Vector): boolean;
-  public checkInOuterFieldExceptTop(v: Vector): boolean;
-  public size: Vector;
-}
-declare class EnemyPool {
-  public checkShotHit(pos: Vector, shape: Collidable, shot: Shot): void;
-}
-declare class BulletPool {
-  public checkShotHit(pos: Vector, shape: Collidable, shot: Shot): void;
-}
-declare class Spark {
-  public set(pos: Vector, vx: number, vy: number, r: number, g: number, b: number, cnt: number): void;
-}
-declare class SparkPool {
-  public getInstanceForced(): Spark;
-}
-declare class Smoke {
-  public static readonly SmokeType: {
-    readonly LANCE_SPARK: number;
-    readonly SPARK: number;
-  };
-  public set(pos: Vector, vx: number, vy: number, vz: number, type: number, cnt: number, size: number): void;
-}
-declare class SmokePool {
-  public getInstanceForced(): Smoke;
-}
-declare class SoundManager {
-  public static playSe(name: string): void;
-}
-declare class Screen {
-  public static setColor(r: number, g: number, b: number, a?: number): void;
-  public static glTranslate(v: Vector): void;
-}
-declare class ShotShape extends CollidableDrawable {
-  public draw(): void;
-}
-declare class LanceShape extends Collidable {
-  public draw?(): void;
-}
-
-declare const PI: number;
 declare const GL_LINE_LOOP: number;
 declare const GL_TRIANGLE_FAN: number;
-declare function sin(v: number): number;
-declare function cos(v: number): number;
+declare const GL_QUADS: number;
 declare function glPushMatrix(): void;
 declare function glPopMatrix(): void;
 declare function glTranslatef(x: number, y: number, z: number): void;
@@ -83,7 +42,7 @@ export class Shot extends Actor {
   private sparks!: SparkPool;
   private smokes!: SmokePool;
   private bullets!: BulletPool;
-  private readonly pos: Vector;
+  private readonly pos = new Vector();
   private cnt = 0;
   private hitCnt = 0;
   private _deg = 0;
@@ -100,19 +59,17 @@ export class Shot extends Actor {
     Shot.rand.setSeed(seed);
   }
 
-  public static close(): void {}
-
-  public constructor() {
-    super();
-    this.pos = new Vector();
+  public static close(): void {
+    Shot.shape.close();
   }
 
   public override init(args: unknown[] | null): void {
-    this.field = args?.[0] as Field;
-    this.enemies = args?.[1] as EnemyPool;
-    this.sparks = args?.[2] as SparkPool;
-    this.smokes = args?.[3] as SmokePool;
-    this.bullets = args?.[4] as BulletPool;
+    const a = args ?? [];
+    this.field = a[0] as Field;
+    this.enemies = a[1] as EnemyPool;
+    this.sparks = a[2] as SparkPool;
+    this.smokes = a[3] as SmokePool;
+    this.bullets = a[4] as BulletPool;
   }
 
   public set(p: Vector, d: number, lance = false, dmg = -1): void {
@@ -135,14 +92,13 @@ export class Shot extends Actor {
       return;
     }
 
-    let sp = Shot.SPEED;
-    if (this.lance) {
-      if (this.cnt < 10) sp = (Shot.LANCE_SPEED * this.cnt) / 10;
-      else sp = Shot.LANCE_SPEED;
-    }
+    let sp: number;
+    if (!this.lance) sp = Shot.SPEED;
+    else if (this.cnt < 10) sp = (Shot.LANCE_SPEED * this.cnt) / 10;
+    else sp = Shot.LANCE_SPEED;
 
-    this.pos.x += sin(this._deg) * sp;
-    this.pos.y += cos(this._deg) * sp;
+    this.pos.x += Math.sin(this._deg) * sp;
+    this.pos.y += Math.cos(this._deg) * sp;
     this.pos.y -= this.field.lastScrollY;
 
     if (
@@ -186,19 +142,19 @@ export class Shot extends Actor {
         let s = this.smokes.getInstanceForced();
         let d = this._deg + Shot.rand.nextSignedFloat(0.1);
         let sp = Shot.rand.nextFloat(Shot.LANCE_SPEED);
-        s.set(this.pos, sin(d) * sp, cos(d) * sp, 0, Smoke.SmokeType.LANCE_SPARK, 30 + Shot.rand.nextInt(30), 1);
+        s.set(this.pos, Math.sin(d) * sp, Math.cos(d) * sp, 0, Smoke.SmokeType.LANCE_SPARK, 30 + Shot.rand.nextInt(30), 1);
         s = this.smokes.getInstanceForced();
         d = this._deg + Shot.rand.nextSignedFloat(0.1);
         sp = Shot.rand.nextFloat(Shot.LANCE_SPEED);
-        s.set(this.pos, -sin(d) * sp, -cos(d) * sp, 0, Smoke.SmokeType.LANCE_SPARK, 30 + Shot.rand.nextInt(30), 1);
+        s.set(this.pos, -Math.sin(d) * sp, -Math.cos(d) * sp, 0, Smoke.SmokeType.LANCE_SPARK, 30 + Shot.rand.nextInt(30), 1);
       }
     } else {
       let s = this.sparks.getInstanceForced();
       let d = this._deg + Shot.rand.nextSignedFloat(0.5);
       s.set(
         this.pos,
-        sin(d) * Shot.SPEED,
-        cos(d) * Shot.SPEED,
+        Math.sin(d) * Shot.SPEED,
+        Math.cos(d) * Shot.SPEED,
         0.6 + Shot.rand.nextSignedFloat(0.4),
         0.6 + Shot.rand.nextSignedFloat(0.4),
         0.1,
@@ -208,8 +164,8 @@ export class Shot extends Actor {
       d = this._deg + Shot.rand.nextSignedFloat(0.5);
       s.set(
         this.pos,
-        -sin(d) * Shot.SPEED,
-        -cos(d) * Shot.SPEED,
+        -Math.sin(d) * Shot.SPEED,
+        -Math.cos(d) * Shot.SPEED,
         0.6 + Shot.rand.nextSignedFloat(0.4),
         0.6 + Shot.rand.nextSignedFloat(0.4),
         0.1,
@@ -236,7 +192,7 @@ export class Shot extends Actor {
         for (let j = 0; j < 6; j++) {
           glPushMatrix();
           glTranslatef(x, y, 0);
-          glRotatef((-this._deg * 180) / PI, 0, 0, 1);
+          glRotatef((-this._deg * 180) / Math.PI, 0, 0, 1);
           glRotatef(d, 0, 1, 0);
           Screen.setColor(0.4, 0.8, 0.8, a);
           glBegin(GL_LINE_LOOP);
@@ -255,13 +211,13 @@ export class Shot extends Actor {
           glPopMatrix();
           d += 60;
         }
-        x -= sin(this._deg) * Shot.LANCE_SPEED * 2;
-        y -= cos(this._deg) * Shot.LANCE_SPEED * 2;
+        x -= Math.sin(this.deg) * Shot.LANCE_SPEED * 2;
+        y -= Math.cos(this.deg) * Shot.LANCE_SPEED * 2;
       }
     } else {
       glPushMatrix();
-      Screen.glTranslate(this.pos);
-      glRotatef((-this._deg * 180) / PI, 0, 0, 1);
+      glTranslatef(this.pos.x, this.pos.y, 0);
+      glRotatef((-this._deg * 180) / Math.PI, 0, 0, 1);
       glRotatef(this.cnt * 31, 0, 1, 0);
       Shot.shape.draw();
       glPopMatrix();
@@ -291,5 +247,40 @@ export class ShotPool extends ActorPool<Shot> {
       if (s.exists && s.lance && !s.removed) return true;
     }
     return false;
+  }
+}
+
+export class ShotShape extends CollidableDrawable {
+  public constructor() {
+    super();
+    this._collision = new Vector(0.33, 0.33);
+  }
+
+  protected override createDisplayList(): void {
+    Screen.setColor(0.1, 0.33, 0.1);
+    glBegin(GL_QUADS);
+    glVertex3(0, 0.3, 0.1);
+    glVertex3(0.066, 0.3, -0.033);
+    glVertex3(0.1, -0.3, -0.05);
+    glVertex3(0, -0.3, 0.15);
+
+    glVertex3(0.066, 0.3, -0.033);
+    glVertex3(-0.066, 0.3, -0.033);
+    glVertex3(-0.1, -0.3, -0.05);
+    glVertex3(0.1, -0.3, -0.05);
+
+    glVertex3(-0.066, 0.3, -0.033);
+    glVertex3(0, 0.3, 0.1);
+    glVertex3(0, -0.3, 0.15);
+    glVertex3(-0.1, -0.3, -0.05);
+    glEnd();
+  }
+}
+
+export class LanceShape implements Collidable {
+  private readonly _collision = new Vector(0.66, 0.66);
+
+  public collision(): Vector {
+    return this._collision;
   }
 }
