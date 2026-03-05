@@ -132,5 +132,5 @@ function buildBootArgs(options: LaunchOptions): string[] {
 
 void (async () => {
   const launchArgs = await promptLaunchOptions();
-  void boot(["gr-web", ...launchArgs]);
+  void boot((["gr-web", ...launchArgs] as unknown) as string[][]);
 })();
