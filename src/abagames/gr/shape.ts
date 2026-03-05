@@ -8,17 +8,8 @@ import { Vector } from "../util/vector";
 import { Screen3D } from "../util/sdl/screen3d";
 import { Rand } from "../util/rand";
 import { DisplayList } from "../util/sdl/displaylist";
-
-declare class Screen {
-  public static setColor(r: number, g: number, b: number, a?: number): void;
-  public static glTranslate(v: Vector | { x: number; y: number; z?: number }): void;
-}
-declare class Wake {
-  public set(p: Vector, deg: number, speed: number, cnt?: number, size?: number, revShape?: boolean): void;
-}
-declare class WakePool {
-  public getInstanceForced(): Wake;
-}
+import { Screen } from "./screen";
+import { type Wake, type WakePool } from "./particle";
 
 export interface Collidable {
   collision(): Vector;

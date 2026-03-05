@@ -9,11 +9,7 @@ import { Screen3D } from "../util/sdl/screen3d";
 import { Vector, Vector3 } from "../util/vector";
 import { Rand } from "../util/rand";
 import { LuminousActor, LuminousActorPool } from "../util/sdl/luminous";
-
-declare class Screen {
-  public static setColor(r: number, g: number, b: number, a?: number): void;
-  public static glTranslate(v: Vector3 | Vector): void;
-}
+import { Screen } from "./screen";
 type FieldLike = {
   lastScrollY: number;
   checkInOuterField(x: number, y: number): boolean;

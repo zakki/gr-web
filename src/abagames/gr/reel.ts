@@ -8,26 +8,9 @@ import { Vector } from "../util/vector";
 import { Screen3D } from "../util/sdl/screen3d";
 import { Actor, ActorPool } from "../util/actor";
 import { Rand } from "../util/rand";
-
-declare class Letter {
-  public static readonly LINE_COLOR: number;
-  public static drawLetter(n: number, style: number): void;
-  public static drawNumSign(
-    n: number,
-    x: number,
-    y: number,
-    size: number,
-    color: number,
-    width?: number,
-    spacing?: number,
-  ): void;
-}
-declare class Screen {
-  public static setColor(r: number, g: number, b: number, a?: number): void;
-}
-declare class SoundManager {
-  public static playSe(name: string): void;
-}
+import { Letter } from "./letter";
+import { Screen } from "./screen";
+import { SoundManager } from "./soundmanager";
 
 
 /**

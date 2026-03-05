@@ -6,73 +6,13 @@
 
 import { Vector } from "../util/vector";
 import { Rand } from "../util/rand";
-
-declare class Field {
-  public static readonly NEXT_BLOCK_AREA_SIZE: number;
-  public lastScrollY: number;
-  public convertToScreenPos(x: number, y: number): Vector;
-}
-declare class EnemyState {
-  public static readonly AppearanceType: {
-    readonly TOP: number;
-    readonly CENTER: number;
-  };
-}
-declare class Enemy {
-  public state: unknown;
-  public set(spec: EnemySpec): void;
-}
-declare class EnemyPool {
-  public hasBoss: boolean;
-  public getInstance(): Enemy | null;
-}
-declare class Ship {
-  public scrollSpeedBase: number;
-}
-declare class BulletPool {}
-declare class SparkPool {}
-declare class SmokePool {}
-declare class FragmentPool {}
-declare class WakePool {}
-declare class SoundManager {
-  public static fadeBgm(): void;
-  public static playBgm(name: string): void;
-  public static nextBgm(): void;
-}
-declare class Letter {
-  public static drawNum(
-    n: number,
-    x: number,
-    y: number,
-    size: number,
-    minDeg?: number,
-    maxDeg?: number,
-    width?: number,
-    spacing?: number,
-  ): void;
-  public static drawTime(ms: number, x: number, y: number, size: number): void;
-}
-declare class EnemySpec {}
-declare class ShipEnemySpec extends EnemySpec {
-  public static readonly ShipClass: {
-    readonly BOSS: number;
-    readonly LARGE: number;
-    readonly MIDDLE: number;
-  };
-  public constructor(field: Field, ship: Ship, sparks: SparkPool, smokes: SmokePool, fragments: FragmentPool, wakes: WakePool);
-  public setParam(rank: number, shipClass: number, rand: Rand): void;
-  public setFirstState(state: unknown, appType: number): boolean;
-}
-declare class PlatformEnemySpec extends EnemySpec {
-  public constructor(field: Field, ship: Ship, sparks: SparkPool, smokes: SmokePool, fragments: FragmentPool, wakes: WakePool);
-  public setParam(rank: number, rand: Rand): void;
-  public setFirstState(state: unknown, x: number, y: number, deg: number): boolean;
-}
-declare class SmallShipEnemySpec extends EnemySpec {
-  public constructor(field: Field, ship: Ship, sparks: SparkPool, smokes: SmokePool, fragments: FragmentPool, wakes: WakePool);
-  public setParam(rank: number, rand: Rand): void;
-  public setFirstState(state: unknown, appType: number): boolean;
-}
+import { Field } from "./field";
+import { EnemyState, Enemy, EnemyPool, EnemySpec, ShipEnemySpec, PlatformEnemySpec, SmallShipEnemySpec } from "./enemy";
+import { Ship } from "./ship";
+import { BulletPool } from "./bullet";
+import { SparkPool, SmokePool, FragmentPool, WakePool } from "./particle";
+import { SoundManager } from "./soundmanager";
+import { Letter } from "./letter";
 
 type PlatformPos = {
   pos: Vector;

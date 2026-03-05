@@ -5,78 +5,19 @@
  */
 
 import { Screen3D } from "../util/sdl/screen3d";
-
-declare class PrefManager {
-  public prefData: { gameMode: number; highScore(gm: number): number };
-}
-declare class Field {
-  public start(): void;
-  public move(): void;
-  public scroll(speed: number, asTitle?: boolean): void;
-}
-declare class GameManager {
-  public startInGame(gameMode: number): void;
-}
-declare class DisplayList {
-  public constructor(num: number);
-  public beginNewList(): void;
-  public endNewList(): void;
-  public call(i: number): void;
-  public close(): void;
-}
-declare class Texture {
-  public constructor(name: string);
-  public bind(): void;
-  public close(): void;
-}
-declare class ReplayData {
-  public score: number;
-}
-declare class RecordablePad {
-  public getState(doRecord?: boolean): PadState;
-}
-declare class RecordableMouse {
-  public getState(doRecord?: boolean): MouseState;
-}
-declare class PadState {
-  public static readonly Button: { readonly A: number; readonly B: number };
-  public static readonly Dir: { readonly UP: number; readonly DOWN: number };
-  public button: number;
-  public dir: number;
-}
-declare class MouseState {
-  public static readonly Button: { readonly LEFT: number };
-  public button: number;
-}
-declare class InGameState {
-  public static readonly GAME_MODE_NUM: number;
-  public static readonly gameModeText: string[];
-  public static readonly GameMode: { readonly MOUSE: number };
-}
-declare class SoundManager {
-  public static enableBgm(): void;
-  public static enableSe(): void;
-  public static disableBgm(): void;
-  public static disableSe(): void;
-  public static fadeBgm(): void;
-  public static playCurrentBgm(): void;
-}
-declare class Screen {
-  public static setColor(r: number, g: number, b: number, a?: number): void;
-  public static lineWidth(width: number): void;
-}
-declare class Letter {
-  public static readonly Direction: { readonly TO_RIGHT: number };
-  public static drawString(
-    text: string,
-    x: number,
-    y: number,
-    size: number,
-    direction?: number,
-    spacing?: number,
-  ): void;
-  public static drawNum(value: number, x: number, y: number, size: number, minDigit?: number, maxDigit?: number): void;
-}
+import { DisplayList } from "../util/sdl/displaylist";
+import { Texture } from "../util/sdl/texture";
+import { MouseState } from "../util/sdl/mouse";
+import { Pad } from "../util/sdl/pad";
+import { RecordablePad } from "../util/sdl/recordablepad";
+import { Field } from "./field";
+import { GameManager, InGameState } from "./gamemanager";
+import { ReplayData } from "./replay";
+import { SoundManager } from "./soundmanager";
+import { Screen } from "./screen";
+import { Letter } from "./letter";
+import { PrefManager } from "./prefmanager";
+import { RecordableMouse } from "./mouse";
 
 
 /**
@@ -159,7 +100,7 @@ export class TitleManager {
   public close(): void {
     this.displayList?.close();
     this.displayList = null;
-    this.logo?.close();
+    this.logo?.deleteTexture();
     this.logo = null;
   }
 
@@ -175,21 +116,24 @@ export class TitleManager {
       this.field.scroll(TitleManager.SCROLL_SPEED_BASE, true);
     }
 
-    const input = this.pad.getState(false);
+    const input = {
+      button: this.pad.getButtonState(),
+      dir: this.pad.getDirState(),
+    };
     const mouseInput = this.mouse.getState(false);
 
     if (this.btnPressedCnt <= 0) {
       const startPressed =
-        (input.button & PadState.Button.A) !== 0 ||
+        (input.button & Pad.Button.A) !== 0 ||
         (this.gameMode === InGameState.GameMode.MOUSE && (mouseInput.button & MouseState.Button.LEFT) !== 0);
       if (startPressed && this.gameMode >= 0) {
         this.gameManager.startInGame(this.gameMode);
       }
 
       let gmc = 0;
-      if ((input.button & PadState.Button.B) !== 0 || (input.dir & PadState.Dir.DOWN) !== 0) {
+      if ((input.button & Pad.Button.B) !== 0 || (input.dir & Pad.Dir.DOWN) !== 0) {
         gmc = 1;
-      } else if ((input.dir & PadState.Dir.UP) !== 0) {
+      } else if ((input.dir & Pad.Dir.UP) !== 0) {
         gmc = -1;
       }
       if (gmc !== 0) {
@@ -212,8 +156,8 @@ export class TitleManager {
     }
 
     if (
-      (input.button & (PadState.Button.A | PadState.Button.B)) !== 0 ||
-      (input.dir & (PadState.Dir.UP | PadState.Dir.DOWN)) !== 0 ||
+      (input.button & (Pad.Button.A | Pad.Button.B)) !== 0 ||
+      (input.dir & (Pad.Dir.UP | Pad.Dir.DOWN)) !== 0 ||
       (mouseInput.button & MouseState.Button.LEFT) !== 0
     ) {
       this.btnPressedCnt = 6;

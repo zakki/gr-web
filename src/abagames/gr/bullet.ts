@@ -7,55 +7,13 @@
 import { Actor, ActorPool } from "../util/actor";
 import { Screen3D } from "../util/sdl/screen3d";
 import { Vector } from "../util/vector";
-
-declare class GameManager {
-  public addSlowdownRatio(v: number): void;
-}
-declare class Field {
-  public static readonly ON_BLOCK_THRESHOLD: number;
-  public lastScrollY: number;
-  public checkInOuterField(v: Vector): boolean;
-  public checkInOuterFieldExceptTop(v: Vector): boolean;
-  public getBlock(v: Vector): number;
-}
-declare class Ship {
-  public checkBulletHit(p: Vector, pp: Vector): boolean;
-}
-declare class Smoke {
-  public static readonly SmokeType: {
-    readonly SAND: number;
-    readonly SPARK: number;
-  };
-  public set(pos: Vector, vx: number, vy: number, vz: number, type: number, cnt: number, size: number): void;
-}
-declare class SmokePool {
-  public getInstanceForced(): Smoke;
-  public getInstance(): Smoke | null;
-}
-declare class Wake {
-  public set(pos: Vector, deg: number, speed: number, cnt: number, size: number, fade: boolean): void;
-}
-declare class WakePool {
-  public getInstanceForced(): Wake;
-}
-declare class Crystal {
-  public set(p: Vector): void;
-}
-declare class CrystalPool {
-  public getInstance(): Crystal | null;
-}
-declare class Shot {
-  public removeHitToBullet(): void;
-}
-declare class Collidable {}
-declare class BulletShape {
-  public size: number;
-  public set(shapeType: number): void;
-  public draw(): void;
-}
-declare class Screen {
-  public static glTranslate(v: Vector): void;
-}
+import type { GameManager } from "./gamemanager";
+import { Field } from "./field";
+import type { Ship } from "./ship";
+import { Smoke, SmokePool, WakePool } from "./particle";
+import { CrystalPool } from "./crystal";
+import type { Shot } from "./shot";
+import { BulletShape, type Collidable } from "./shape";
 
 function normalizeDeg(v: number): number {
   let r = v;
@@ -196,7 +154,7 @@ export class Bullet extends Actor {
       return;
     }
     Screen3D.glPushMatrix();
-    Screen.glTranslate(this.pos);
+    Screen3D.glTranslatef(this.pos.x, this.pos.y, 0);
     if (this._destructive) {
       Screen3D.glRotatef(this.cnt * 13, 0, 0, 1);
     } else {

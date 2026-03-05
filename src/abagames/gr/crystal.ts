@@ -7,11 +7,7 @@
 import { Actor, ActorPool } from "../util/actor";
 import { Screen3D } from "../util/sdl/screen3d";
 import { Vector } from "../util/vector";
-
-declare class CrystalShape {
-  public draw(): void;
-  public close(): void;
-}
+import { CrystalShape } from "./shape";
 
 
 /**
