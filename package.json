@@ -9,7 +9,8 @@
     "pages": "rm -rf docs/assets && npm run build && rsync -a --delete dist/ docs/",
     "preview": "vite preview",
     "test": "vitest --run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "refresh:shims": "node scripts/refresh-shims.mjs"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
