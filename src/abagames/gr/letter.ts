@@ -8,25 +8,15 @@
 // D_IMPORT: private import std.math;
 // D_IMPORT: private import opengl;
 // D_IMPORT: private import abagames.util.sdl.displaylist;
+import { DisplayList } from "../util/sdl/displaylist";
 // D_IMPORT: private import abagames.gr.screen;
+import { Screen3D } from "../util/sdl/screen3d";
+import { Screen } from "../util/sdl/screen";
 
 /**
  * Letters.
  */
-declare class DisplayList {
-  public constructor(num: number);
-  public resetList(): void;
-  public newList(): void;
-  public endList(): void;
-  public call(i: number): void;
-  public close(): void;
-}
-declare class Screen {
-  public static setColor(r: number, g: number, b: number, a?: number): void;
-}
-declare const PI: number;
-declare function cos(v: number): number;
-declare function sin(v: number): number;
+/*
 declare function glPushMatrix(): void;
 declare function glPopMatrix(): void;
 declare function glTranslatef(x: number, y: number, z: number): void;
@@ -37,6 +27,7 @@ declare function glEnd(): void;
 declare function glVertex3(x: number, y: number, z: number): void;
 declare const GL_TRIANGLE_FAN: number;
 declare const GL_LINE_LOOP: number;
+*/
 
 export class Letter {
   public static displayList: DisplayList;
@@ -78,21 +69,21 @@ export class Letter {
   }
 
   private static drawLetterAt(n: number, x: number, y: number, s: number, d: number, c: number): void {
-    glPushMatrix();
-    glTranslatef(x, y, 0);
-    glScalef(s, s, s);
-    glRotatef(d, 0, 0, 1);
+    Screen3D.glPushMatrix();
+    Screen3D.glTranslatef(x, y, 0);
+    Screen3D.glScalef(s, s, s);
+    Screen3D.glRotatef(d, 0, 0, 1);
     Letter.displayList.call(n + c * Letter.LETTER_NUM);
-    glPopMatrix();
+    Screen3D.glPopMatrix();
   }
 
   private static drawLetterRevAt(n: number, x: number, y: number, s: number, d: number, c: number): void {
-    glPushMatrix();
-    glTranslatef(x, y, 0);
-    glScalef(s, -s, s);
-    glRotatef(d, 0, 0, 1);
+    Screen3D.glPushMatrix();
+    Screen3D.glTranslatef(x, y, 0);
+    Screen3D.glScalef(s, -s, s);
+    Screen3D.glRotatef(d, 0, 0, 1);
     Letter.displayList.call(n + c * Letter.LETTER_NUM);
-    glPopMatrix();
+    Screen3D.glPopMatrix();
   }
 
   static readonly Direction = {
@@ -169,8 +160,8 @@ export class Letter {
           break;
         }
       } else {
-        x += cos(ld * PI / 180) * s * Letter.LETTER_WIDTH;
-        y += sin(ld * PI / 180) * s * Letter.LETTER_WIDTH;
+        x += Math.cos(ld * Math.PI / 180) * s * Letter.LETTER_WIDTH;
+        y += Math.sin(ld * Math.PI / 180) * s * Letter.LETTER_WIDTH;
       }
     }
   }
@@ -296,47 +287,47 @@ export class Letter {
   }
 
   private static setBox(x: number, y: number, width: number, height: number, deg: number, r: number, g: number, b: number): void {
-    glPushMatrix();
-    glTranslatef(x - width / 2, y - height / 2, 0);
-    glRotatef(deg, 0, 0, 1);
-    Screen.setColor(r, g, b, 0.5);
-    glBegin(GL_TRIANGLE_FAN);
+    Screen3D.glPushMatrix();
+    Screen3D.glTranslatef(x - width / 2, y - height / 2, 0);
+    Screen3D.glRotatef(deg, 0, 0, 1);
+    Screen3D.setColor(r, g, b, 0.5);
+    Screen3D.glBegin(Screen3D.GL_TRIANGLE_FAN);
     Letter.setBoxPart(width, height);
-    glEnd();
-    Screen.setColor(r, g, b);
-    glBegin(GL_LINE_LOOP);
+    Screen3D.glEnd();
+    Screen3D.setColor(r, g, b);
+    Screen3D.glBegin(Screen3D.GL_LINE_LOOP);
     Letter.setBoxPart(width, height);
-    glEnd();
-    glPopMatrix();
+    Screen3D.glEnd();
+    Screen3D.glPopMatrix();
   }
 
   private static setBoxLine(x: number, y: number, width: number, height: number, deg: number): void {
-    glPushMatrix();
-    glTranslatef(x - width / 2, y - height / 2, 0);
-    glRotatef(deg, 0, 0, 1);
-    glBegin(GL_LINE_LOOP);
+    Screen3D.glPushMatrix();
+    Screen3D.glTranslatef(x - width / 2, y - height / 2, 0);
+    Screen3D.glRotatef(deg, 0, 0, 1);
+    Screen3D.glBegin(Screen3D.GL_LINE_LOOP);
     Letter.setBoxPart(width, height);
-    glEnd();
-    glPopMatrix();
+    Screen3D.glEnd();
+    Screen3D.glPopMatrix();
   }
 
   private static setBoxPoly(x: number, y: number, width: number, height: number, deg: number): void {
-    glPushMatrix();
-    glTranslatef(x - width / 2, y - height / 2, 0);
-    glRotatef(deg, 0, 0, 1);
-    glBegin(GL_TRIANGLE_FAN);
+    Screen3D.glPushMatrix();
+    Screen3D.glTranslatef(x - width / 2, y - height / 2, 0);
+    Screen3D.glRotatef(deg, 0, 0, 1);
+    Screen3D.glBegin(Screen3D.GL_TRIANGLE_FAN);
     Letter.setBoxPart(width, height);
-    glEnd();
-    glPopMatrix();
+    Screen3D.glEnd();
+    Screen3D.glPopMatrix();
   }
 
   private static setBoxPart(width: number, height: number): void {
-    glVertex3(-width / 2, 0, 0);
-    glVertex3(-width / 3 * 1, -height / 2, 0);
-    glVertex3( width / 3 * 1, -height / 2, 0);
-    glVertex3( width / 2, 0, 0);
-    glVertex3( width / 3 * 1,  height / 2, 0);
-    glVertex3(-width / 3 * 1,  height / 2, 0);
+    Screen3D.glVertexXYZ(-width / 2, 0, 0);
+    Screen3D.glVertexXYZ(-width / 3 * 1, -height / 2, 0);
+    Screen3D.glVertexXYZ( width / 3 * 1, -height / 2, 0);
+    Screen3D.glVertexXYZ( width / 2, 0, 0);
+    Screen3D.glVertexXYZ( width / 3 * 1,  height / 2, 0);
+    Screen3D.glVertexXYZ(-width / 3 * 1,  height / 2, 0);
   }
   
   private static spData: number[][][] =
@@ -584,3 +575,5 @@ export class Letter {
      [0, 0, 0, 0, 99999],
     ]];
 }
+
+Letter.init();
