@@ -7,6 +7,7 @@
 import { Actor, ActorPool } from "../util/actor";
 import { Vector } from "../util/vector";
 import { Rand } from "../util/rand";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Field } from "./field";
 import { Screen } from "./screen";
 import type { EnemyPool } from "./enemy";
@@ -14,17 +15,6 @@ import type { BulletPool } from "./bullet";
 import { Smoke, type SparkPool, type SmokePool } from "./particle";
 import { SoundManager } from "./soundmanager";
 import { type Collidable, CollidableDrawable } from "./shape";
-
-declare const GL_LINE_LOOP: number;
-declare const GL_TRIANGLE_FAN: number;
-declare const GL_QUADS: number;
-declare function glPushMatrix(): void;
-declare function glPopMatrix(): void;
-declare function glTranslatef(x: number, y: number, z: number): void;
-declare function glRotatef(angleDeg: number, x: number, y: number, z: number): void;
-declare function glBegin(mode: number): void;
-declare function glEnd(): void;
-declare function glVertex3(x: number, y: number, z: number): void;
 
 /**
  * Player's shot.
@@ -190,37 +180,37 @@ export class Shot extends Actor {
         }
         let d = i * 13 + this.cnt * 3;
         for (let j = 0; j < 6; j++) {
-          glPushMatrix();
-          glTranslatef(x, y, 0);
-          glRotatef((-this._deg * 180) / Math.PI, 0, 0, 1);
-          glRotatef(d, 0, 1, 0);
+          Screen3D.glPushMatrix();
+          Screen3D.glTranslatef(x, y, 0);
+          Screen3D.glRotatef((-this._deg * 180) / Math.PI, 0, 0, 1);
+          Screen3D.glRotatef(d, 0, 1, 0);
           Screen.setColor(0.4, 0.8, 0.8, a);
-          glBegin(GL_LINE_LOOP);
-          glVertex3(-size, Shot.LANCE_SPEED, size / 2);
-          glVertex3(size, Shot.LANCE_SPEED, size / 2);
-          glVertex3(size, -Shot.LANCE_SPEED, size / 2);
-          glVertex3(-size, -Shot.LANCE_SPEED, size / 2);
-          glEnd();
+          Screen3D.glBegin(Screen3D.GL_LINE_LOOP);
+          Screen3D.glVertex3f(-size, Shot.LANCE_SPEED, size / 2);
+          Screen3D.glVertex3f(size, Shot.LANCE_SPEED, size / 2);
+          Screen3D.glVertex3f(size, -Shot.LANCE_SPEED, size / 2);
+          Screen3D.glVertex3f(-size, -Shot.LANCE_SPEED, size / 2);
+          Screen3D.glEnd();
           Screen.setColor(0.2, 0.5, 0.5, a / 2);
-          glBegin(GL_TRIANGLE_FAN);
-          glVertex3(-size, Shot.LANCE_SPEED, size / 2);
-          glVertex3(size, Shot.LANCE_SPEED, size / 2);
-          glVertex3(size, -Shot.LANCE_SPEED, size / 2);
-          glVertex3(-size, -Shot.LANCE_SPEED, size / 2);
-          glEnd();
-          glPopMatrix();
+          Screen3D.glBegin(Screen3D.GL_TRIANGLE_FAN);
+          Screen3D.glVertex3f(-size, Shot.LANCE_SPEED, size / 2);
+          Screen3D.glVertex3f(size, Shot.LANCE_SPEED, size / 2);
+          Screen3D.glVertex3f(size, -Shot.LANCE_SPEED, size / 2);
+          Screen3D.glVertex3f(-size, -Shot.LANCE_SPEED, size / 2);
+          Screen3D.glEnd();
+          Screen3D.glPopMatrix();
           d += 60;
         }
         x -= Math.sin(this.deg) * Shot.LANCE_SPEED * 2;
         y -= Math.cos(this.deg) * Shot.LANCE_SPEED * 2;
       }
     } else {
-      glPushMatrix();
-      glTranslatef(this.pos.x, this.pos.y, 0);
-      glRotatef((-this._deg * 180) / Math.PI, 0, 0, 1);
-      glRotatef(this.cnt * 31, 0, 1, 0);
+      Screen3D.glPushMatrix();
+      Screen3D.glTranslatef(this.pos.x, this.pos.y, 0);
+      Screen3D.glRotatef((-this._deg * 180) / Math.PI, 0, 0, 1);
+      Screen3D.glRotatef(this.cnt * 31, 0, 1, 0);
       Shot.shape.draw();
-      glPopMatrix();
+      Screen3D.glPopMatrix();
     }
   }
 
@@ -258,22 +248,22 @@ export class ShotShape extends CollidableDrawable {
 
   protected override createDisplayList(): void {
     Screen.setColor(0.1, 0.33, 0.1);
-    glBegin(GL_QUADS);
-    glVertex3(0, 0.3, 0.1);
-    glVertex3(0.066, 0.3, -0.033);
-    glVertex3(0.1, -0.3, -0.05);
-    glVertex3(0, -0.3, 0.15);
+    Screen3D.glBegin(Screen3D.GL_QUADS);
+    Screen3D.glVertex3f(0, 0.3, 0.1);
+    Screen3D.glVertex3f(0.066, 0.3, -0.033);
+    Screen3D.glVertex3f(0.1, -0.3, -0.05);
+    Screen3D.glVertex3f(0, -0.3, 0.15);
 
-    glVertex3(0.066, 0.3, -0.033);
-    glVertex3(-0.066, 0.3, -0.033);
-    glVertex3(-0.1, -0.3, -0.05);
-    glVertex3(0.1, -0.3, -0.05);
+    Screen3D.glVertex3f(0.066, 0.3, -0.033);
+    Screen3D.glVertex3f(-0.066, 0.3, -0.033);
+    Screen3D.glVertex3f(-0.1, -0.3, -0.05);
+    Screen3D.glVertex3f(0.1, -0.3, -0.05);
 
-    glVertex3(-0.066, 0.3, -0.033);
-    glVertex3(0, 0.3, 0.1);
-    glVertex3(0, -0.3, 0.15);
-    glVertex3(-0.1, -0.3, -0.05);
-    glEnd();
+    Screen3D.glVertex3f(-0.066, 0.3, -0.033);
+    Screen3D.glVertex3f(0, 0.3, 0.1);
+    Screen3D.glVertex3f(0, -0.3, 0.15);
+    Screen3D.glVertex3f(-0.1, -0.3, -0.05);
+    Screen3D.glEnd();
   }
 }
 

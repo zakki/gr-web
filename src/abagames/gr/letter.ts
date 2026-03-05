@@ -17,16 +17,6 @@ import { Screen } from "../util/sdl/screen";
  * Letters.
  */
 /*
-declare function glPushMatrix(): void;
-declare function glPopMatrix(): void;
-declare function glTranslatef(x: number, y: number, z: number): void;
-declare function glScalef(x: number, y: number, z: number): void;
-declare function glRotatef(angleDeg: number, x: number, y: number, z: number): void;
-declare function glBegin(mode: number): void;
-declare function glEnd(): void;
-declare function glVertex3(x: number, y: number, z: number): void;
-declare const GL_TRIANGLE_FAN: number;
-declare const GL_LINE_LOOP: number;
 */
 
 export class Letter {

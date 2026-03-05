@@ -5,6 +5,7 @@
  */
 
 import { Vector } from "../util/vector";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Rand } from "../util/rand";
 import { Screen } from "./screen";
 import { Smoke, Spark, Fragment } from "./particle";
@@ -40,15 +41,6 @@ type SmokePoolLike = { getInstance(): Smoke | null; getInstanceForced(): Smoke }
 type FragmentPoolLike = { getInstanceForced(): Fragment };
 type EnemyLike = { index: number; isBoss: boolean; increaseMultiplier(v: number): void; addScore(v: number): void };
 
-declare const GL_LINE_STRIP: number;
-declare const GL_QUADS: number;
-declare function glPushMatrix(): void;
-declare function glPopMatrix(): void;
-declare function glRotatef(angleDeg: number, x: number, y: number, z: number): void;
-declare function glTranslatef(x: number, y: number, z: number): void;
-declare function glBegin(mode: number): void;
-declare function glEnd(): void;
-declare function glVertex2(x: number, y: number): void;
 
 function normalizeDeg(v: number): number {
   let r = v;
@@ -200,29 +192,29 @@ export class Turret {
 
   public draw(): void {
     if (this.spec.invisible) return;
-    glPushMatrix();
+    Screen3D.glPushMatrix();
     if (this.destroyedCnt < 0 && this.damagedCnt > 0) {
       Turret.damagedPos.x = this.pos.x + Turret.rand.nextSignedFloat(this.damagedCnt * 0.015);
       Turret.damagedPos.y = this.pos.y + Turret.rand.nextSignedFloat(this.damagedCnt * 0.015);
-      glTranslatef(Turret.damagedPos.x, Turret.damagedPos.y, 0);
+      Screen3D.glTranslatef(Turret.damagedPos.x, Turret.damagedPos.y, 0);
     } else {
-      glTranslatef(this.pos.x, this.pos.y, 0);
+      Screen3D.glTranslatef(this.pos.x, this.pos.y, 0);
     }
-    glRotatef((-(this.baseDeg + this.deg) * 180) / Math.PI, 0, 0, 1);
+    Screen3D.glRotatef((-(this.baseDeg + this.deg) * 180) / Math.PI, 0, 0, 1);
     if (this.destroyedCnt >= 0) this.spec.destroyedShape.draw();
     else if (!this.damaged) this.spec.shape.draw();
     else this.spec.damagedShape.draw();
-    glPopMatrix();
+    Screen3D.glPopMatrix();
 
     if (this.destroyedCnt >= 0 || this.appCnt > 120) return;
     const a = this.startCnt < 12 ? this.startCnt / 12 : 1 - this.appCnt / 120;
     const td = this.baseDeg + this.deg;
-    glBegin(GL_LINE_STRIP);
+    Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
     Screen.setColor(0.9, 0.1, 0.1, a);
-    glVertex2(this.pos.x + Math.sin(td) * this.spec.minRange, this.pos.y + Math.cos(td) * this.spec.minRange);
+    Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.minRange, this.pos.y + Math.cos(td) * this.spec.minRange, 0);
     Screen.setColor(0.9, 0.1, 0.1, a * 0.5);
-    glVertex2(this.pos.x + Math.sin(td) * this.spec.maxRange, this.pos.y + Math.cos(td) * this.spec.maxRange);
-    glEnd();
+    Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.maxRange, this.pos.y + Math.cos(td) * this.spec.maxRange, 0);
+    Screen3D.glEnd();
   }
 
   public checkCollision(x: number, y: number, c: Collidable, shot: Shot): boolean {

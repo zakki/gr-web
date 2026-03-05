@@ -5,6 +5,7 @@
  */
 
 import { Vector } from "../util/vector";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Actor, ActorPool } from "../util/actor";
 import { Rand } from "../util/rand";
 
@@ -28,11 +29,6 @@ declare class SoundManager {
   public static playSe(name: string): void;
 }
 
-declare function glPushMatrix(): void;
-declare function glPopMatrix(): void;
-declare function glTranslatef(x: number, y: number, z: number): void;
-declare function glRotatef(angleDeg: number, x: number, y: number, z: number): void;
-declare function glScalef(x: number, y: number, z: number): void;
 
 /**
  * Rolling reel that displays the score.
@@ -126,22 +122,22 @@ export class NumReel {
     let od = normalizeDeg360((d - (n * 360) / 10 - 15) * 1.5);
 
     for (let i = 0; i < 3; i++) {
-      glPushMatrix();
+      Screen3D.glPushMatrix();
       if (this.ofs > 0.005) {
-        glTranslatef(x + NumReel.rand.nextSignedFloat(1) * this.ofs, y + NumReel.rand.nextSignedFloat(1) * this.ofs, 0);
+        Screen3D.glTranslatef(x + NumReel.rand.nextSignedFloat(1) * this.ofs, y + NumReel.rand.nextSignedFloat(1) * this.ofs, 0);
       } else {
-        glTranslatef(x, y, 0);
+        Screen3D.glTranslatef(x, y, 0);
       }
-      glRotatef(od, 1, 0, 0);
-      glTranslatef(0, 0, s * 2.4);
-      glScalef(s, -s, s);
+      Screen3D.glRotatef(od, 1, 0, 0);
+      Screen3D.glTranslatef(0, 0, s * 2.4);
+      Screen3D.glScalef(s, -s, s);
       let a = 1 - Math.abs((od + 15) / (54)) / 2;
       if (a < 0) a = 0;
       Screen.setColor(a, a, a);
       Letter.drawLetter(n, 2);
       Screen.setColor(a / 2, a / 2, a / 2);
       Letter.drawLetter(n, 3);
-      glPopMatrix();
+      Screen3D.glPopMatrix();
 
       n--;
       if (n < 0) n = 9;

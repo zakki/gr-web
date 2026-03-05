@@ -5,6 +5,7 @@
  */
 
 import { Actor, ActorPool } from "../util/actor";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Vector } from "../util/vector";
 import { Rand } from "../util/rand";
 import { MathUtil } from "../util/math";
@@ -74,14 +75,6 @@ type NumIndicatorLike = {
 type NumIndicatorPoolLike = { getInstanceForced(): NumIndicatorLike };
 type ScoreReelLike = { addActualScore(v: number): void };
 
-declare const GL_LINE_STRIP: number;
-declare function glPushMatrix(): void;
-declare function glPopMatrix(): void;
-declare function glRotatef(angleDeg: number, x: number, y: number, z: number): void;
-declare function glTranslatef(x: number, y: number, z: number): void;
-declare function glBegin(mode: number): void;
-declare function glEnd(): void;
-declare function glVertex2(x: number, y: number): void;
 
 /**
  * Enemy ships.
@@ -567,22 +560,22 @@ export class EnemyState {
   }
 
   public draw(): void {
-    glPushMatrix();
+    Screen3D.glPushMatrix();
     if (this.destroyedCnt < 0 && this.damagedCnt > 0) {
       EnemyState.damagedPos.x = this.pos.x + EnemyState.rand.nextSignedFloat(this.damagedCnt * 0.01);
       EnemyState.damagedPos.y = this.pos.y + EnemyState.rand.nextSignedFloat(this.damagedCnt * 0.01);
-      glTranslatef(EnemyState.damagedPos.x, EnemyState.damagedPos.y, 0);
+      Screen3D.glTranslatef(EnemyState.damagedPos.x, EnemyState.damagedPos.y, 0);
     } else {
-      glTranslatef(this.pos.x, this.pos.y, 0);
+      Screen3D.glTranslatef(this.pos.x, this.pos.y, 0);
     }
-    glRotatef((-this.deg * 180) / Math.PI, 0, 0, 1);
+    Screen3D.glRotatef((-this.deg * 180) / Math.PI, 0, 0, 1);
 
     if (this.destroyedCnt >= 0) this.spec.destroyedShape.draw();
     else if (!this.damaged) this.spec.shape.draw();
     else this.spec.damagedShape.draw();
 
     if (this.destroyedCnt < 0) this.spec.bridgeShape.draw();
-    glPopMatrix();
+    Screen3D.glPopMatrix();
 
     if (this.destroyedCnt >= 0) return;
 

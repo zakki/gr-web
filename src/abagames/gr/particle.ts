@@ -5,6 +5,7 @@
  */
 
 import { Actor, ActorPool } from "../util/actor";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Vector, Vector3 } from "../util/vector";
 import { Rand } from "../util/rand";
 import { LuminousActor, LuminousActorPool } from "../util/sdl/luminous";
@@ -19,13 +20,6 @@ type FieldLike = {
   getBlock(x: number, y: number): number;
 };
 
-declare function glPushMatrix(): void;
-declare function glPopMatrix(): void;
-declare function glRotatef(angleDeg: number, x: number, y: number, z: number): void;
-declare function glScalef(x: number, y: number, z: number): void;
-declare function glVertex3(x: number, y: number, z: number): void;
-declare function sin(v: number): number;
-declare function cos(v: number): number;
 
 /**
  * Sparks.
@@ -331,16 +325,16 @@ export class Fragment extends Actor {
   }
 
   public override draw(): void {
-    glPushMatrix();
+    Screen3D.glPushMatrix();
     Screen.setColor(0.7, 0.5, 0.5, 0.9);
     Screen.glTranslate(this.pos);
-    glRotatef(this.d2, 1, 0, 0);
-    glScalef(this.size, this.size, 1);
-    glVertex3(-0.5, -0.25, 0);
-    glVertex3(0.5, -0.25, 0);
-    glVertex3(0.5, 0.25, 0);
-    glVertex3(-0.5, 0.25, 0);
-    glPopMatrix();
+    Screen3D.glRotatef(this.d2, 1, 0, 0);
+    Screen3D.glScalef(this.size, this.size, 1);
+    Screen3D.glVertex3f(-0.5, -0.25, 0);
+    Screen3D.glVertex3f(0.5, -0.25, 0);
+    Screen3D.glVertex3f(0.5, 0.25, 0);
+    Screen3D.glVertex3f(-0.5, 0.25, 0);
+    Screen3D.glPopMatrix();
   }
 }
 
@@ -452,8 +446,8 @@ export class Wake extends Actor {
     if (!this.field.checkInOuterField(p.x, p.y)) return;
     this.pos.x = p.x;
     this.pos.y = p.y;
-    this.vel.x = sin(deg) * speed;
-    this.vel.y = cos(deg) * speed;
+    this.vel.x = Math.sin(deg) * speed;
+    this.vel.y = Math.cos(deg) * speed;
     this.cnt = c;
     this.size = sz;
     this.revShape = rs;
@@ -476,13 +470,13 @@ export class Wake extends Actor {
     let ox = this.vel.x * this.size;
     let oy = this.vel.y * this.size;
     Screen.setColor(0.33, 0.33, 1);
-    if (this.revShape) glVertex3(this.pos.x + ox, this.pos.y + oy, 0);
-    else glVertex3(this.pos.x - ox, this.pos.y - oy, 0);
+    if (this.revShape) Screen3D.glVertex3f(this.pos.x + ox, this.pos.y + oy, 0);
+    else Screen3D.glVertex3f(this.pos.x - ox, this.pos.y - oy, 0);
     ox *= 0.2;
     oy *= 0.2;
     Screen.setColor(0.2, 0.2, 0.6, 0.5);
-    glVertex3(this.pos.x - oy, this.pos.y + ox, 0);
-    glVertex3(this.pos.x + oy, this.pos.y - ox, 0);
+    Screen3D.glVertex3f(this.pos.x - oy, this.pos.y + ox, 0);
+    Screen3D.glVertex3f(this.pos.x + oy, this.pos.y - ox, 0);
   }
 }
 
@@ -496,32 +490,32 @@ function drawSparkTriangle(x: number, y: number, vx: number, vy: number, r: numb
   let ox = vx * 2;
   let oy = vy * 2;
   Screen.setColor(r, g, b, 1);
-  glVertex3(x - ox, y - oy, 0);
+  Screen3D.glVertex3f(x - ox, y - oy, 0);
   ox *= 0.5;
   oy *= 0.5;
   Screen.setColor(r * 0.5, g * 0.5, b * 0.5, 0);
-  glVertex3(x - oy, y + ox, 0);
-  glVertex3(x + oy, y - ox, 0);
+  Screen3D.glVertex3f(x - oy, y + ox, 0);
+  Screen3D.glVertex3f(x + oy, y - ox, 0);
 }
 
 function drawSmokeQuad(pos: Vector3, size: number, r: number, g: number, b: number, a: number): void {
   const q = size / 2;
   Screen.setColor(r, g, b, a);
-  glVertex3(pos.x - q, pos.y - q, pos.z);
-  glVertex3(pos.x + q, pos.y - q, pos.z);
-  glVertex3(pos.x + q, pos.y + q, pos.z);
-  glVertex3(pos.x - q, pos.y + q, pos.z);
+  Screen3D.glVertex3f(pos.x - q, pos.y - q, pos.z);
+  Screen3D.glVertex3f(pos.x + q, pos.y - q, pos.z);
+  Screen3D.glVertex3f(pos.x + q, pos.y + q, pos.z);
+  Screen3D.glVertex3f(pos.x - q, pos.y + q, pos.z);
 }
 
 function drawSparkFragment(pos: Vector3, size: number, d2: number): void {
-  glPushMatrix();
+  Screen3D.glPushMatrix();
   Screen.setColor(1, Math.random(), 0, 0.8);
   Screen.glTranslate(pos);
-  glRotatef(d2, 1, 0, 0);
-  glScalef(size, size, 1);
-  glVertex3(-0.25, -0.25, 0);
-  glVertex3(0.25, -0.25, 0);
-  glVertex3(0.25, 0.25, 0);
-  glVertex3(-0.25, 0.25, 0);
-  glPopMatrix();
+  Screen3D.glRotatef(d2, 1, 0, 0);
+  Screen3D.glScalef(size, size, 1);
+  Screen3D.glVertex3f(-0.25, -0.25, 0);
+  Screen3D.glVertex3f(0.25, -0.25, 0);
+  Screen3D.glVertex3f(0.25, 0.25, 0);
+  Screen3D.glVertex3f(-0.25, 0.25, 0);
+  Screen3D.glPopMatrix();
 }

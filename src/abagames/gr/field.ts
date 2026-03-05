@@ -5,18 +5,10 @@
  */
 
 import { Vector } from "../util/vector";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Rand } from "../util/rand";
 import { Screen } from "./screen";
 
-declare const GL_BLEND: number;
-declare const GL_TRIANGLE_FAN: number;
-declare const GL_QUADS: number;
-declare function glDisable(cap: number): void;
-declare function glEnable(cap: number): void;
-declare function glBegin(mode: number): void;
-declare function glEnd(): void;
-declare function glVertex2(x: number, y: number): void;
-declare function glVertex3(x: number, y: number, z: number): void;
 
 type StageManagerLike = {
   gotoNextBlockArea(): void;
@@ -191,21 +183,21 @@ export class Field {
   }
 
   public drawSideWalls(): void {
-    glDisable(GL_BLEND);
+    Screen3D.glDisable(Screen3D.GL_BLEND);
     Screen.setColor(0, 0, 0, 1);
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3(Field.SIDEWALL_X1, Field.SIDEWALL_Y, 0);
-    glVertex3(Field.SIDEWALL_X2, Field.SIDEWALL_Y, 0);
-    glVertex3(Field.SIDEWALL_X2, -Field.SIDEWALL_Y, 0);
-    glVertex3(Field.SIDEWALL_X1, -Field.SIDEWALL_Y, 0);
-    glEnd();
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3(-Field.SIDEWALL_X1, Field.SIDEWALL_Y, 0);
-    glVertex3(-Field.SIDEWALL_X2, Field.SIDEWALL_Y, 0);
-    glVertex3(-Field.SIDEWALL_X2, -Field.SIDEWALL_Y, 0);
-    glVertex3(-Field.SIDEWALL_X1, -Field.SIDEWALL_Y, 0);
-    glEnd();
-    glEnable(GL_BLEND);
+    Screen3D.glBegin(Screen3D.GL_TRIANGLE_FAN);
+    Screen3D.glVertex3f(Field.SIDEWALL_X1, Field.SIDEWALL_Y, 0);
+    Screen3D.glVertex3f(Field.SIDEWALL_X2, Field.SIDEWALL_Y, 0);
+    Screen3D.glVertex3f(Field.SIDEWALL_X2, -Field.SIDEWALL_Y, 0);
+    Screen3D.glVertex3f(Field.SIDEWALL_X1, -Field.SIDEWALL_Y, 0);
+    Screen3D.glEnd();
+    Screen3D.glBegin(Screen3D.GL_TRIANGLE_FAN);
+    Screen3D.glVertex3f(-Field.SIDEWALL_X1, Field.SIDEWALL_Y, 0);
+    Screen3D.glVertex3f(-Field.SIDEWALL_X2, Field.SIDEWALL_Y, 0);
+    Screen3D.glVertex3f(-Field.SIDEWALL_X2, -Field.SIDEWALL_Y, 0);
+    Screen3D.glVertex3f(-Field.SIDEWALL_X1, -Field.SIDEWALL_Y, 0);
+    Screen3D.glEnd();
+    Screen3D.glEnable(Screen3D.GL_BLEND);
   }
 
   private drawPanel(): void {
@@ -214,23 +206,23 @@ export class Field {
     let sy = (this.blockWidth * this.screenBlockSizeY) / 2 + oy;
     by = this.wrapY(by - 1);
     sy += this.blockWidth;
-    glBegin(GL_QUADS);
+    Screen3D.glBegin(Screen3D.GL_QUADS);
     for (let y = -1; y < this.screenBlockSizeY + Field.NEXT_BLOCK_AREA_SIZE; y++) {
       let sx = (-this.blockWidth * this.screenBlockSizeX) / 2;
       for (let bx = 0; bx < this.screenBlockSizeX; bx++) {
         const p = this.panel[bx][by];
         const c = p.ci <= 0 ? 0.2 : p.ci === 1 ? 0.35 : 0.5;
         Screen.setColor(c * p.or, c * p.og, c * p.ob);
-        glVertex3(sx + p.x, sy - p.y, p.z);
-        glVertex3(sx + p.x + 1.8, sy - p.y, p.z);
-        glVertex3(sx + p.x + 1.8, sy - p.y - 1.8, p.z);
-        glVertex3(sx + p.x, sy - p.y - 1.8, p.z);
+        Screen3D.glVertex3f(sx + p.x, sy - p.y, p.z);
+        Screen3D.glVertex3f(sx + p.x + 1.8, sy - p.y, p.z);
+        Screen3D.glVertex3f(sx + p.x + 1.8, sy - p.y - 1.8, p.z);
+        Screen3D.glVertex3f(sx + p.x, sy - p.y - 1.8, p.z);
         sx += this.blockWidth;
       }
       sy -= this.blockWidth;
       by = this.wrapY(by + 1);
     }
-    glEnd();
+    Screen3D.glEnd();
   }
 
   private createPanel(x: number, y: number): void {

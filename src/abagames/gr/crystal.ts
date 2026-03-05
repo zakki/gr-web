@@ -5,6 +5,7 @@
  */
 
 import { Actor, ActorPool } from "../util/actor";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Vector } from "../util/vector";
 
 declare class CrystalShape {
@@ -12,9 +13,6 @@ declare class CrystalShape {
   public close(): void;
 }
 
-declare function glPushMatrix(): void;
-declare function glTranslatef(x: number, y: number, z: number): void;
-declare function glPopMatrix(): void;
 
 /**
  * Bonus crystals.
@@ -93,10 +91,10 @@ export class Crystal extends Actor {
       r *= (Crystal.COUNT - this.cnt) / (Crystal.COUNT - Crystal.PULLIN_COUNT);
     }
     for (let i = 0; i < 4; i++) {
-      glPushMatrix();
-      glTranslatef(this.pos.x + Math.sin(d) * r, this.pos.y + Math.cos(d) * r, 0);
+      Screen3D.glPushMatrix();
+      Screen3D.glTranslatef(this.pos.x + Math.sin(d) * r, this.pos.y + Math.cos(d) * r, 0);
       Crystal._shape.draw();
-      glPopMatrix();
+      Screen3D.glPopMatrix();
       d += Math.PI / 2;
     }
   }

@@ -5,6 +5,7 @@
  */
 
 import { Vector } from "../util/vector";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Rand } from "../util/rand";
 import { DisplayList } from "../util/sdl/displaylist";
 
@@ -18,23 +19,6 @@ declare class Wake {
 declare class WakePool {
   public getInstanceForced(): Wake;
 }
-
-declare const PI: number;
-declare const GL_LINE_LOOP: number;
-declare const GL_LINE_STRIP: number;
-declare const GL_TRIANGLE_FAN: number;
-declare const GL_BLEND: number;
-declare function sin(v: number): number;
-declare function cos(v: number): number;
-declare function glPushMatrix(): void;
-declare function glPopMatrix(): void;
-declare function glScalef(x: number, y: number, z: number): void;
-declare function glRotatef(angleDeg: number, x: number, y: number, z: number): void;
-declare function glDisable(cap: number): void;
-declare function glEnable(cap: number): void;
-declare function glBegin(mode: number): void;
-declare function glEnd(): void;
-declare function glVertex3(x: number, y: number, z: number): void;
 
 export interface Collidable {
   collision(): Vector;
@@ -77,10 +61,10 @@ export class ResizableDrawable extends DrawableShape {
 
   public override draw(): void {
     if (!this.shape) return;
-    glPushMatrix();
-    glScalef(this.size, this.size, this.size);
+    Screen3D.glPushMatrix();
+    Screen3D.glScalef(this.size, this.size, this.size);
     this.shape.draw();
-    glPopMatrix();
+    Screen3D.glPopMatrix();
   }
 
   public override close(): void {}
@@ -138,9 +122,9 @@ export class BaseShape extends DrawableShape {
 
   protected override createDisplayList(): void {
     Screen.setColor(this.r, this.g, this.b);
-    glBegin(GL_LINE_LOOP);
-    for (const p of this._pointPos) glVertex3(p.x, p.y, 0);
-    glEnd();
+    Screen3D.glBegin(Screen3D.GL_LINE_LOOP);
+    for (const p of this._pointPos) Screen3D.glVertex3f(p.x, p.y, 0);
+    Screen3D.glEnd();
   }
 
   private buildPoints(): void {
@@ -148,9 +132,9 @@ export class BaseShape extends DrawableShape {
     this._pointDeg.length = 0;
     const pointNum = 12;
     for (let i = 0; i < pointNum; i++) {
-      const d = (PI * 2 * i) / pointNum;
-      const px = sin(d) * this.size * (1 - this.distRatio * 0.35);
-      const py = cos(d) * this.size;
+      const d = (Math.PI * 2 * i) / pointNum;
+      const px = Math.sin(d) * this.size * (1 - this.distRatio * 0.35);
+      const py = Math.cos(d) * this.size;
       this._pointPos.push(new Vector(px, py));
       this._pointDeg.push(d);
     }
@@ -168,9 +152,9 @@ export class BaseShape extends DrawableShape {
     const w = wakes.getInstanceForced();
     const sz = Math.min(this.size, 10) * 24 * sr;
     const sp = Math.min(spd, 0.1);
-    BaseShape.wakePos.x = pos.x + sin(deg + PI / 2) * this.size * 0.5 * sr;
-    BaseShape.wakePos.y = pos.y + cos(deg + PI / 2) * this.size * 0.5 * sr;
-    w.set(BaseShape.wakePos, deg + PI + BaseShape.rand.nextSignedFloat(0.1), sp, 40, sz);
+    BaseShape.wakePos.x = pos.x + Math.sin(deg + Math.PI / 2) * this.size * 0.5 * sr;
+    BaseShape.wakePos.y = pos.y + Math.cos(deg + Math.PI / 2) * this.size * 0.5 * sr;
+    w.set(BaseShape.wakePos, deg + Math.PI + BaseShape.rand.nextSignedFloat(0.1), sp, 40, sz);
   }
 
   public checkShipCollision(x: number, y: number, _deg: number, sr = 1): boolean {
@@ -307,54 +291,54 @@ export class BulletShape extends ResizableDrawable {
 
 export class NormalBulletShape extends DrawableShape {
   protected override createDisplayList(): void {
-    glDisable(GL_BLEND);
+    Screen3D.glDisable(Screen3D.GL_BLEND);
     Screen.setColor(1, 1, 0.3);
-    glBegin(GL_LINE_STRIP);
-    glVertex3(0.2, -0.25, 0.2);
-    glVertex3(0, 0.33, 0);
-    glVertex3(-0.2, -0.25, -0.2);
-    glEnd();
-    glEnable(GL_BLEND);
+    Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
+    Screen3D.glVertex3f(0.2, -0.25, 0.2);
+    Screen3D.glVertex3f(0, 0.33, 0);
+    Screen3D.glVertex3f(-0.2, -0.25, -0.2);
+    Screen3D.glEnd();
+    Screen3D.glEnable(Screen3D.GL_BLEND);
   }
 }
 
 export class SmallBulletShape extends DrawableShape {
   protected override createDisplayList(): void {
-    glDisable(GL_BLEND);
+    Screen3D.glDisable(Screen3D.GL_BLEND);
     Screen.setColor(0.6, 0.9, 0.3);
-    glBegin(GL_LINE_STRIP);
-    glVertex3(0.25, -0.25, 0.25);
-    glVertex3(0, 0.33, 0);
-    glVertex3(-0.25, -0.25, -0.25);
-    glEnd();
-    glEnable(GL_BLEND);
+    Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
+    Screen3D.glVertex3f(0.25, -0.25, 0.25);
+    Screen3D.glVertex3f(0, 0.33, 0);
+    Screen3D.glVertex3f(-0.25, -0.25, -0.25);
+    Screen3D.glEnd();
+    Screen3D.glEnable(Screen3D.GL_BLEND);
   }
 }
 
 export class MovingTurretBulletShape extends DrawableShape {
   protected override createDisplayList(): void {
-    glDisable(GL_BLEND);
+    Screen3D.glDisable(Screen3D.GL_BLEND);
     Screen.setColor(0.7, 0.5, 0.9);
-    glBegin(GL_LINE_STRIP);
-    glVertex3(0.25, -0.25, 0.25);
-    glVertex3(0, 0.33, 0);
-    glVertex3(-0.25, -0.25, -0.25);
-    glEnd();
-    glEnable(GL_BLEND);
+    Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
+    Screen3D.glVertex3f(0.25, -0.25, 0.25);
+    Screen3D.glVertex3f(0, 0.33, 0);
+    Screen3D.glVertex3f(-0.25, -0.25, -0.25);
+    Screen3D.glEnd();
+    Screen3D.glEnable(Screen3D.GL_BLEND);
   }
 }
 
 export class DestructiveBulletShape extends CollidableDrawable {
   protected override createDisplayList(): void {
-    glDisable(GL_BLEND);
+    Screen3D.glDisable(Screen3D.GL_BLEND);
     Screen.setColor(0.9, 0.9, 0.6);
-    glBegin(GL_LINE_LOOP);
-    glVertex3(0.2, 0, 0);
-    glVertex3(0, 0.4, 0);
-    glVertex3(-0.2, 0, 0);
-    glVertex3(0, -0.4, 0);
-    glEnd();
-    glEnable(GL_BLEND);
+    Screen3D.glBegin(Screen3D.GL_LINE_LOOP);
+    Screen3D.glVertex3f(0.2, 0, 0);
+    Screen3D.glVertex3f(0, 0.4, 0);
+    Screen3D.glVertex3f(-0.2, 0, 0);
+    Screen3D.glVertex3f(0, -0.4, 0);
+    Screen3D.glEnd();
+    Screen3D.glEnable(Screen3D.GL_BLEND);
     this._collision = new Vector(0.4, 0.4);
   }
 }
@@ -362,24 +346,24 @@ export class DestructiveBulletShape extends CollidableDrawable {
 export class CrystalShape extends DrawableShape {
   protected override createDisplayList(): void {
     Screen.setColor(0.6, 1, 0.7);
-    glBegin(GL_LINE_LOOP);
-    glVertex3(-0.2, 0.2, 0);
-    glVertex3(0.2, 0.2, 0);
-    glVertex3(0.2, -0.2, 0);
-    glVertex3(-0.2, -0.2, 0);
-    glEnd();
+    Screen3D.glBegin(Screen3D.GL_LINE_LOOP);
+    Screen3D.glVertex3f(-0.2, 0.2, 0);
+    Screen3D.glVertex3f(0.2, 0.2, 0);
+    Screen3D.glVertex3f(0.2, -0.2, 0);
+    Screen3D.glVertex3f(-0.2, -0.2, 0);
+    Screen3D.glEnd();
   }
 }
 
 export class ShieldShape extends DrawableShape {
   protected override createDisplayList(): void {
     Screen.setColor(0.5, 0.5, 0.7);
-    glBegin(GL_LINE_LOOP);
+    Screen3D.glBegin(Screen3D.GL_LINE_LOOP);
     let d = 0;
     for (let i = 0; i < 8; i++) {
-      glVertex3(sin(d), cos(d), 0);
-      d += PI / 4;
+      Screen3D.glVertex3f(Math.sin(d), Math.cos(d), 0);
+      d += Math.PI / 4;
     }
-    glEnd();
+    Screen3D.glEnd();
   }
 }

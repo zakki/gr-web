@@ -4,6 +4,8 @@
  * Copyright 2005 Kenta Cho. Some rights reserved.
  */
 
+import { Screen3D } from "../util/sdl/screen3d";
+
 declare class PrefManager {
   public prefData: { gameMode: number; highScore(gm: number): number };
 }
@@ -76,19 +78,6 @@ declare class Letter {
   public static drawNum(value: number, x: number, y: number, size: number, minDigit?: number, maxDigit?: number): void;
 }
 
-declare const GL_TEXTURE_2D: number;
-declare const GL_TRIANGLE_FAN: number;
-declare const GL_LINE_STRIP: number;
-declare function glEnable(cap: number): void;
-declare function glDisable(cap: number): void;
-declare function glBegin(mode: number): void;
-declare function glEnd(): void;
-declare function glTexCoord2(u: number, v: number): void;
-declare function glVertex2(x: number, y: number): void;
-declare function glPushMatrix(): void;
-declare function glPopMatrix(): void;
-declare function glTranslatef(x: number, y: number, z: number): void;
-declare function glScalef(x: number, y: number, z: number): void;
 
 /**
  * Title screen.
@@ -121,47 +110,47 @@ export class TitleManager {
     this.logo = new Texture("title.bmp");
     this.displayList = new DisplayList(1);
     this.displayList.beginNewList();
-    glEnable(GL_TEXTURE_2D);
+    Screen3D.glEnable(Screen3D.GL_TEXTURE_2D);
     this.logo.bind();
     Screen.setColor(1, 1, 1);
-    glBegin(GL_TRIANGLE_FAN);
-    glTexCoord2(0, 0);
-    glVertex2(0, -63);
-    glTexCoord2(1, 0);
-    glVertex2(255, -63);
-    glTexCoord2(1, 1);
-    glVertex2(255, 0);
-    glTexCoord2(0, 1);
-    glVertex2(0, 0);
-    glEnd();
+    Screen3D.glBegin(Screen3D.GL_TRIANGLE_FAN);
+    Screen3D.glTexCoord2f(0, 0);
+    Screen3D.glVertex3f(0, -63, 0);
+    Screen3D.glTexCoord2f(1, 0);
+    Screen3D.glVertex3f(255, -63, 0);
+    Screen3D.glTexCoord2f(1, 1);
+    Screen3D.glVertex3f(255, 0, 0);
+    Screen3D.glTexCoord2f(0, 1);
+    Screen3D.glVertex3f(0, 0, 0);
+    Screen3D.glEnd();
 
     Screen.lineWidth(3);
-    glDisable(GL_TEXTURE_2D);
-    glBegin(GL_LINE_STRIP);
-    glVertex2(-80, -7);
-    glVertex2(-20, -7);
-    glVertex2(10, -70);
-    glEnd();
-    glBegin(GL_LINE_STRIP);
-    glVertex2(45, -2);
-    glVertex2(-15, -2);
-    glVertex2(-45, 61);
-    glEnd();
+    Screen3D.glDisable(Screen3D.GL_TEXTURE_2D);
+    Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
+    Screen3D.glVertex3f(-80, -7, 0);
+    Screen3D.glVertex3f(-20, -7, 0);
+    Screen3D.glVertex3f(10, -70, 0);
+    Screen3D.glEnd();
+    Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
+    Screen3D.glVertex3f(45, -2, 0);
+    Screen3D.glVertex3f(-15, -2, 0);
+    Screen3D.glVertex3f(-45, 61, 0);
+    Screen3D.glEnd();
 
-    glBegin(GL_TRIANGLE_FAN);
+    Screen3D.glBegin(Screen3D.GL_TRIANGLE_FAN);
     Screen.setColor(1, 1, 1);
-    glVertex2(-19, -6);
+    Screen3D.glVertex3f(-19, -6, 0);
     Screen.setColor(0, 0, 0);
-    glVertex2(-79, -6);
-    glVertex2(11, -69);
-    glEnd();
-    glBegin(GL_TRIANGLE_FAN);
+    Screen3D.glVertex3f(-79, -6, 0);
+    Screen3D.glVertex3f(11, -69, 0);
+    Screen3D.glEnd();
+    Screen3D.glBegin(Screen3D.GL_TRIANGLE_FAN);
     Screen.setColor(1, 1, 1);
-    glVertex2(-16, -3);
+    Screen3D.glVertex3f(-16, -3, 0);
     Screen.setColor(0, 0, 0);
-    glVertex2(44, -3);
-    glVertex2(-46, 60);
-    glEnd();
+    Screen3D.glVertex3f(44, -3, 0);
+    Screen3D.glVertex3f(-46, 60, 0);
+    Screen3D.glEnd();
     Screen.lineWidth(1);
     this.displayList.endNewList();
     this.gameMode = this.prefManager.prefData.gameMode;
@@ -247,11 +236,11 @@ export class TitleManager {
         ts = 0.5;
       }
     }
-    glPushMatrix();
-    glTranslatef(80 * ts, 240, 0);
-    glScalef(ts, ts, 0);
+    Screen3D.glPushMatrix();
+    Screen3D.glTranslatef(80 * ts, 240, 0);
+    Screen3D.glScalef(ts, ts, 0);
     this.displayList?.call(0);
-    glPopMatrix();
+    Screen3D.glPopMatrix();
 
     if (this.cnt > 150) {
       Letter.drawString("HIGH", 3, 305, 4, Letter.Direction.TO_RIGHT, 1);

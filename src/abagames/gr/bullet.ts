@@ -5,6 +5,7 @@
  */
 
 import { Actor, ActorPool } from "../util/actor";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Vector } from "../util/vector";
 
 declare class GameManager {
@@ -56,18 +57,10 @@ declare class Screen {
   public static glTranslate(v: Vector): void;
 }
 
-declare const PI: number;
-declare function sin(v: number): number;
-declare function cos(v: number): number;
-declare function fabs(v: number): number;
-declare function glPushMatrix(): void;
-declare function glPopMatrix(): void;
-declare function glRotatef(angleDeg: number, x: number, y: number, z: number): void;
-
 function normalizeDeg(v: number): number {
   let r = v;
-  while (r > PI) r -= PI * 2;
-  while (r < -PI) r += PI * 2;
+  while (r > Math.PI) r -= Math.PI * 2;
+  while (r < -Math.PI) r += Math.PI * 2;
   return r;
 }
 
@@ -156,8 +149,8 @@ export class Bullet extends Actor {
     if (this.field.checkInOuterField(this.pos)) {
       this.gameManager.addSlowdownRatio(this.speed * 0.24);
     }
-    const mx = sin(this.deg) * this.speed;
-    const my = cos(this.deg) * this.speed;
+    const mx = Math.sin(this.deg) * this.speed;
+    const my = Math.cos(this.deg) * this.speed;
     this.pos.x += mx;
     this.pos.y += my;
     this.pos.y -= this.field.lastScrollY;
@@ -178,7 +171,7 @@ export class Bullet extends Actor {
   public startDisappear(): void {
     if (this.field.getBlock(this.pos) >= 0) {
       const s = this.smokes.getInstanceForced();
-      s.set(this.pos, sin(this.deg) * this.speed * 0.2, cos(this.deg) * this.speed * 0.2, 0, Smoke.SmokeType.SAND, 30, this.size * 0.5);
+      s.set(this.pos, Math.sin(this.deg) * this.speed * 0.2, Math.cos(this.deg) * this.speed * 0.2, 0, Smoke.SmokeType.SAND, 30, this.size * 0.5);
     } else {
       const w = this.wakes.getInstanceForced();
       w.set(this.pos, this.deg, this.speed, 60, this.size * 3, true);
@@ -202,27 +195,27 @@ export class Bullet extends Actor {
     if (!this.field.checkInOuterField(this.pos)) {
       return;
     }
-    glPushMatrix();
+    Screen3D.glPushMatrix();
     Screen.glTranslate(this.pos);
     if (this._destructive) {
-      glRotatef(this.cnt * 13, 0, 0, 1);
+      Screen3D.glRotatef(this.cnt * 13, 0, 0, 1);
     } else {
-      glRotatef((-this.deg * 180) / PI, 0, 0, 1);
-      glRotatef(this.cnt * 13, 0, 1, 0);
+      Screen3D.glRotatef((-this.deg * 180) / Math.PI, 0, 0, 1);
+      Screen3D.glRotatef(this.cnt * 13, 0, 1, 0);
     }
     this.shape.draw();
-    glPopMatrix();
+    Screen3D.glPopMatrix();
   }
 
   public checkShotHit(p: Vector, shape: Collidable, shot: Shot): void {
     void shape;
-    const ox = fabs(this.pos.x - p.x);
-    const oy = fabs(this.pos.y - p.y);
+    const ox = Math.abs(this.pos.x - p.x);
+    const oy = Math.abs(this.pos.y - p.y);
     if (ox + oy < 0.5) {
       shot.removeHitToBullet();
       const smoke = this.smokes.getInstance();
       if (smoke) {
-        smoke.set(this.pos, sin(this.deg) * this.speed, cos(this.deg) * this.speed, 0, Smoke.SmokeType.SPARK, 30, this.size * 0.5);
+        smoke.set(this.pos, Math.sin(this.deg) * this.speed, Math.cos(this.deg) * this.speed, 0, Smoke.SmokeType.SPARK, 30, this.size * 0.5);
       }
       this.remove();
     }
