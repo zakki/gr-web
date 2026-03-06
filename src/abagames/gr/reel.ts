@@ -102,7 +102,9 @@ export class NumReel {
   public draw(x: number, y: number, s: number): void {
     let n = (Math.trunc(this.deg / 36 + 0.99) + 1) % 10;
     const d = this.deg % 360;
-    let od = normalizeDeg360((d - (n * 360) / 10 - 15) * 1.5);
+    let od = d - (n * 360) / 10 - 15;
+    od = normalizeDeg360(od);
+    od *= 1.5;
 
     for (let i = 0; i < 3; i++) {
       Screen3D.glPushMatrix();
@@ -124,7 +126,8 @@ export class NumReel {
 
       n--;
       if (n < 0) n = 9;
-      od = normalizeDeg360(od + 54);
+      od += 54;
+      od = normalizeDeg360(od);
     }
     this.ofs *= 0.95;
   }
@@ -330,7 +333,8 @@ export class NumIndicatorPool extends ActorPool<NumIndicator> {
 }
 
 function normalizeDeg360(v: number): number {
-  let r = v % 360;
-  if (r < 0) r += 360;
-  return r;
+  let d = v;
+  if (d < -180) d = 360 - (-d % 360);
+  d = ((d + 180) % 360) - 180;
+  return d;
 }
