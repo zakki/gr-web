@@ -106,7 +106,7 @@ export class GameManager extends SDLGameManager {
 
     this.sparks = new SparkPool(120, []);
     this.wakes = new WakePool(100, [this.field]);
-    this.smokes = new SmokePool(200, [this.field]);
+    this.smokes = new SmokePool(200, [this.field, this.wakes]);
     this.fragments = new FragmentPool(60, [this.field, this.smokes]);
     this.sparkFragments = new SparkFragmentPool(40, [this.field, this.smokes]);
 
