@@ -183,6 +183,9 @@ export class TitleManager {
     Screen3D.glPushMatrix();
     Screen3D.glTranslatef(80 * ts, 240, 0);
     Screen3D.glScalef(ts, ts, 0);
+    // In WebGL display-list emulation, Texture.bind() is not captured in the list.
+    // Re-bind here so the logo quad always has the current texture bound.
+    this.logo?.bind();
     this.displayList?.call(0);
     Screen3D.glPopMatrix();
 
