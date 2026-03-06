@@ -155,6 +155,7 @@ export class Smoke extends LuminousActor {
     let my: number;
     let mz: number;
     let t: number;
+    const argc = arguments.length;
 
     if (typeof pOrX === "number") {
       x = pOrX;
@@ -163,6 +164,8 @@ export class Smoke extends LuminousActor {
       my = myOrMz;
       mz = mzOrT;
       t = tOrC;
+      c = argc >= 7 ? (arguments[6] as number) : 60;
+      sz = argc >= 8 ? (arguments[7] as number) : 2;
     } else {
       x = pOrX.x;
       y = pOrX.y;
@@ -171,7 +174,8 @@ export class Smoke extends LuminousActor {
       my = mxOrMy;
       mz = myOrMz;
       t = mzOrT;
-      c = tOrC;
+      c = argc >= 6 ? (arguments[5] as number) : 60;
+      sz = argc >= 7 ? (arguments[6] as number) : 2;
     }
 
     if (!this.field.checkInOuterField(x, y)) return;
