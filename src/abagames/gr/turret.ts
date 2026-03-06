@@ -104,7 +104,8 @@ export class Turret {
     this.baseDeg = d;
     if (this.destroyedCnt >= 0) {
       this.destroyedCnt++;
-      if (this.destroyedCnt % 20 === 0) {
+      const itv = 5 + Math.trunc(this.destroyedCnt / 12);
+      if (itv < 60 && this.destroyedCnt % itv === 0) {
         const s = this.smokes.getInstance();
         s?.set(this.pos, 0, 0, 0.01 + Turret.rand.nextFloat(0.01), Smoke.SmokeType.FIRE, 90 + Turret.rand.nextInt(30), this.spec.size);
       }
@@ -116,7 +117,7 @@ export class Turret {
     let ax = shipPos.x - this.pos.x;
     let ay = shipPos.y - this.pos.y;
     if (this.spec.lookAheadRatio !== 0) {
-      const rd = Math.max(0.1, this.pos.dist(shipPos) / Math.max(0.1, this.spec.speed));
+      const rd = (this.pos.dist(shipPos) / this.spec.speed) * 1.2;
       ax += shipVel.x * this.spec.lookAheadRatio * rd;
       ay += shipVel.y * this.spec.lookAheadRatio * rd;
     }
@@ -206,15 +207,48 @@ export class Turret {
     else this.spec.damagedShape.draw();
     Screen3D.glPopMatrix();
 
-    if (this.destroyedCnt >= 0 || this.appCnt > 120) return;
-    const a = this.startCnt < 12 ? this.startCnt / 12 : 1 - this.appCnt / 120;
-    const td = this.baseDeg + this.deg;
-    Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
-    Screen.setColor(0.9, 0.1, 0.1, a);
-    Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.minRange, this.pos.y + Math.cos(td) * this.spec.minRange, 0);
-    Screen.setColor(0.9, 0.1, 0.1, a * 0.5);
-    Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.maxRange, this.pos.y + Math.cos(td) * this.spec.maxRange, 0);
-    Screen3D.glEnd();
+    if (this.destroyedCnt >= 0) return;
+    if (this.appCnt > 120) return;
+    let a = 1 - this.appCnt / 120;
+    if (this.startCnt < 12) a = this.startCnt / 12;
+
+    let td = this.baseDeg + this.deg;
+    if (this.spec.nway <= 1) {
+      Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
+      Screen.setColor(0.9, 0.1, 0.1, a);
+      Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.minRange, this.pos.y + Math.cos(td) * this.spec.minRange, 0);
+      Screen.setColor(0.9, 0.1, 0.1, a * 0.5);
+      Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.maxRange, this.pos.y + Math.cos(td) * this.spec.maxRange, 0);
+      Screen3D.glEnd();
+    } else {
+      td -= (this.spec.nwayAngle * (this.spec.nway - 1)) / 2;
+      Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
+      Screen.setColor(0.9, 0.1, 0.1, a * 0.75);
+      Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.minRange, this.pos.y + Math.cos(td) * this.spec.minRange, 0);
+      Screen.setColor(0.9, 0.1, 0.1, a * 0.25);
+      Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.maxRange, this.pos.y + Math.cos(td) * this.spec.maxRange, 0);
+      Screen3D.glEnd();
+
+      Screen3D.glBegin(Screen3D.GL_QUADS);
+      for (let i = 0; i < this.spec.nway - 1; i++) {
+        Screen.setColor(0.9, 0.1, 0.1, a * 0.3);
+        Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.minRange, this.pos.y + Math.cos(td) * this.spec.minRange, 0);
+        Screen.setColor(0.9, 0.1, 0.1, a * 0.05);
+        Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.maxRange, this.pos.y + Math.cos(td) * this.spec.maxRange, 0);
+        td += this.spec.nwayAngle;
+        Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.maxRange, this.pos.y + Math.cos(td) * this.spec.maxRange, 0);
+        Screen.setColor(0.9, 0.1, 0.1, a * 0.3);
+        Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.minRange, this.pos.y + Math.cos(td) * this.spec.minRange, 0);
+      }
+      Screen3D.glEnd();
+
+      Screen3D.glBegin(Screen3D.GL_LINE_STRIP);
+      Screen.setColor(0.9, 0.1, 0.1, a * 0.75);
+      Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.minRange, this.pos.y + Math.cos(td) * this.spec.minRange, 0);
+      Screen.setColor(0.9, 0.1, 0.1, a * 0.25);
+      Screen3D.glVertex3f(this.pos.x + Math.sin(td) * this.spec.maxRange, this.pos.y + Math.cos(td) * this.spec.maxRange, 0);
+      Screen3D.glEnd();
+    }
   }
 
   public checkCollision(x: number, y: number, c: Collidable, shot: Shot): boolean {
@@ -224,7 +258,7 @@ export class Turret {
     const dx = this.pos.x - x;
     const dy = this.pos.y - y;
     if (dx * dx + dy * dy <= hitR * hitR) {
-      this.addDamage((shot as unknown as { damage: number }).damage ?? 1);
+      this.addDamage(shot.damage);
       return true;
     }
     return false;
@@ -337,6 +371,31 @@ export class TurretSpec {
     this.shape = new TurretShape(TurretShape.TurretShapeType.NORMAL);
     this.damagedShape = new TurretShape(TurretShape.TurretShapeType.DAMAGED);
     this.destroyedShape = new TurretShape(TurretShape.TurretShapeType.DESTROYED);
+    this.init();
+  }
+
+  private init(): void {
+    this.type = 0;
+    this.interval = 99999;
+    this.speed = 1;
+    this.speedAccel = 0;
+    this.minRange = 0;
+    this.maxRange = 99999;
+    this.turnSpeed = 99999;
+    this.turnRange = 99999;
+    this.burstNum = 1;
+    this.burstInterval = 99999;
+    this.burstTurnRatio = 0;
+    this.blind = false;
+    this.lookAheadRatio = 0;
+    this.nway = 1;
+    this.nwayAngle = 0;
+    this.nwayChange = false;
+    this.bulletShape = BulletShape.BulletShapeType.NORMAL;
+    this.bulletDestructive = false;
+    this.shield = 99999;
+    this.invisible = false;
+    this.size = 1;
   }
 
   public setParam(ts: TurretSpec): void;
@@ -368,49 +427,149 @@ export class TurretSpec {
       return;
     }
 
-    const rk = Math.max(0, a);
+    this.init();
+    let rk = Math.max(0, a);
     const r = rand ?? new Rand();
     const t = type ?? TurretSpec.TurretType.MAIN;
     this.type = t;
     if (t === TurretSpec.TurretType.DUMMY) {
       this.invisible = true;
-      this.interval = 99999;
-      this.shield = 1;
       return;
     }
 
-    this.minRange = 4 + r.nextFloat(6);
-    this.maxRange = this.minRange + 8 + r.nextFloat(10);
-    this.turnSpeed = 0.005 + r.nextFloat(0.02);
-    this.turnRange = Math.PI / 4 + r.nextFloat(Math.PI / 4);
-    this.burstNum = 1 + r.nextInt(2 + Math.min(4, Math.trunc(rk * 0.15)));
-    this.burstInterval = 4 + r.nextInt(8);
-    this.interval = 20 + r.nextInt(70);
-    this.speed = 0.12 + Math.sqrt(Math.max(0.1, rk * 0.03 + r.nextFloat(0.3))) * 0.18;
-    this.speedAccel = r.nextSignedFloat(0.015);
-    this.nway = 1 + r.nextInt(1 + Math.min(3, Math.trunc(rk * 0.05)));
-    this.nwayAngle = 0.1 + r.nextFloat(0.25);
-    this.blind = r.nextInt(3) !== 0;
-    this.lookAheadRatio = r.nextFloat(Math.min(1, rk * 0.03));
-    this.shield = 8 + Math.trunc(rk * 0.4);
-    this.size = 0.33 + r.nextFloat(0.12);
-
-    if (t === TurretSpec.TurretType.SUB_DESTRUCTIVE) {
-      this.bulletShape = BulletShape.BulletShapeType.DESTRUCTIVE;
-      this.bulletDestructive = true;
-      this.interval = Math.max(8, Math.trunc(this.interval * 0.7));
-    } else if (t === TurretSpec.TurretType.SMALL) {
-      this.bulletShape = BulletShape.BulletShapeType.SMALL;
-      this.invisible = true;
-      this.turnSpeed = 0;
-      this.nway = 1;
-    } else if (t === TurretSpec.TurretType.MOVING) {
-      this.bulletShape = BulletShape.BulletShapeType.MOVING_TURRET;
-      this.invisible = true;
-      this.turnSpeed = 0;
-    } else if (t === TurretSpec.TurretType.SUB) {
-      this.shield = Math.max(4, Math.trunc(this.shield * 0.75));
+    switch (t) {
+      case TurretSpec.TurretType.SMALL:
+        this.minRange = 8;
+        this.bulletShape = BulletShape.BulletShapeType.SMALL;
+        this.blind = true;
+        this.invisible = true;
+        break;
+      case TurretSpec.TurretType.MOVING:
+        this.minRange = 6;
+        this.bulletShape = BulletShape.BulletShapeType.MOVING_TURRET;
+        this.blind = true;
+        this.invisible = true;
+        this.turnSpeed = 0;
+        this.maxRange = 9 + r.nextFloat(12);
+        rk *= 10 / Math.sqrt(this.maxRange);
+        break;
+      default:
+        this.maxRange = 9 + r.nextFloat(16);
+        this.minRange = this.maxRange / (4 + r.nextFloat(0.5));
+        if (t === TurretSpec.TurretType.SUB || t === TurretSpec.TurretType.SUB_DESTRUCTIVE) {
+          this.maxRange *= 0.72;
+          this.minRange *= 0.9;
+        }
+        rk *= 10 / Math.sqrt(this.maxRange);
+        if (r.nextInt(4) === 0) {
+          let lar = rk * 0.1;
+          if (lar > 1) lar = 1;
+          this.lookAheadRatio = r.nextFloat(lar / 2) + lar / 2;
+          rk /= 1 + this.lookAheadRatio * 0.3;
+        }
+        if (r.nextInt(3) === 0 && this.lookAheadRatio === 0) {
+          this.blind = false;
+          rk *= 1.5;
+        } else {
+          this.blind = true;
+        }
+        this.turnRange = Math.PI / 4 + r.nextFloat(Math.PI / 4);
+        this.turnSpeed = 0.005 + r.nextFloat(0.015);
+        if (t === TurretSpec.TurretType.MAIN) this.turnRange *= 1.2;
+        if (r.nextInt(4) === 0) this.burstTurnRatio = r.nextFloat(0.66) + 0.33;
+        break;
     }
+
+    this.burstInterval = 6 + r.nextInt(8);
+    switch (t) {
+      case TurretSpec.TurretType.MAIN: {
+        this.size = 0.42 + r.nextFloat(0.05);
+        const br = rk * 0.3 * (1 + r.nextSignedFloat(0.2));
+        const nr = rk * 0.33 * r.nextFloat(1);
+        const ir = rk * 0.1 * (1 + r.nextSignedFloat(0.2));
+        this.burstNum = Math.trunc(br) + 1;
+        this.nway = Math.trunc(nr * 0.66 + 1);
+        this.interval = Math.trunc(120 / (ir * 2 + 1)) + 1;
+        let sr = rk - this.burstNum + 1 - (this.nway - 1) / 0.66 - ir;
+        if (sr < 0) sr = 0;
+        this.speed = Math.sqrt(sr * 0.6) * 0.12;
+        this.shield = 20;
+        break;
+      }
+      case TurretSpec.TurretType.SUB: {
+        this.size = 0.36 + r.nextFloat(0.025);
+        const br = rk * 0.4 * (1 + r.nextSignedFloat(0.2));
+        const nr = rk * 0.2 * r.nextFloat(1);
+        const ir = rk * 0.2 * (1 + r.nextSignedFloat(0.2));
+        this.burstNum = Math.trunc(br) + 1;
+        this.nway = Math.trunc(nr * 0.66 + 1);
+        this.interval = Math.trunc(120 / (ir * 2 + 1)) + 1;
+        let sr = rk - this.burstNum + 1 - (this.nway - 1) / 0.66 - ir;
+        if (sr < 0) sr = 0;
+        this.speed = Math.sqrt(sr * 0.7) * 0.2;
+        this.shield = 12;
+        break;
+      }
+      case TurretSpec.TurretType.SUB_DESTRUCTIVE: {
+        this.size = 0.36 + r.nextFloat(0.025);
+        const br = rk * 0.4 * (1 + r.nextSignedFloat(0.2));
+        const nr = rk * 0.2 * r.nextFloat(1);
+        const ir = rk * 0.2 * (1 + r.nextSignedFloat(0.2));
+        this.burstNum = Math.trunc(br) * 2 + 1;
+        this.nway = Math.trunc(nr * 0.66 + 1);
+        this.interval = Math.trunc(60 / (ir * 2 + 1)) + 1;
+        this.burstInterval *= 0.88;
+        this.bulletShape = BulletShape.BulletShapeType.DESTRUCTIVE;
+        this.bulletDestructive = true;
+        let sr = rk - (this.burstNum - 1) / 2 - (this.nway - 1) / 0.66 - ir;
+        if (sr < 0) sr = 0;
+        this.speed = Math.sqrt(sr * 0.7) * 0.33;
+        this.shield = 12;
+        break;
+      }
+      case TurretSpec.TurretType.SMALL: {
+        this.size = 0.33;
+        const br = rk * 0.33 * (1 + r.nextSignedFloat(0.2));
+        const ir = rk * 0.2 * (1 + r.nextSignedFloat(0.2));
+        this.burstNum = Math.trunc(br) + 1;
+        this.nway = 1;
+        this.interval = Math.trunc(120 / (ir * 2 + 1)) + 1;
+        let sr = rk - this.burstNum + 1 - ir;
+        if (sr < 0) sr = 0;
+        this.speed = Math.sqrt(sr) * 0.24;
+        break;
+      }
+      case TurretSpec.TurretType.MOVING: {
+        this.size = 0.36;
+        const br = rk * 0.3 * (1 + r.nextSignedFloat(0.2));
+        const nr = rk * 0.1 * r.nextFloat(1);
+        const ir = rk * 0.33 * (1 + r.nextSignedFloat(0.2));
+        this.burstNum = Math.trunc(br) + 1;
+        this.nway = Math.trunc(nr * 0.66 + 1);
+        this.interval = Math.trunc(120 / (ir * 2 + 1)) + 1;
+        let sr = rk - this.burstNum + 1 - (this.nway - 1) / 0.66 - ir;
+        if (sr < 0) sr = 0;
+        this.speed = Math.sqrt(sr * 0.7) * 0.2;
+        break;
+      }
+    }
+
+    if (this.speed < 0.1) this.speed = 0.1;
+    else this.speed = Math.sqrt(this.speed * 10) / 10;
+
+    if (this.burstNum > 2) {
+      if (r.nextInt(4) === 0) {
+        this.speed *= 0.8;
+        this.burstInterval *= 0.7;
+        this.speedAccel = (this.speed * (0.4 + r.nextFloat(0.3))) / this.burstNum;
+        if (r.nextInt(2) === 0) this.speedAccel *= -1;
+        this.speed -= (this.speedAccel * this.burstNum) / 2;
+      }
+      if (r.nextInt(5) === 0) {
+        if (this.nway > 1) this.nwayChange = true;
+      }
+    }
+    this.nwayAngle = (0.1 + r.nextFloat(0.33)) / (1 + this.nway * 0.1);
   }
 
   public setBossSpec(): void {
@@ -550,6 +709,7 @@ export class MovingTurretGroup {
   private cnt = 0;
   private readonly centerPos = new Vector();
   private readonly turret: Turret[];
+  private readonly ship: ShipLike;
 
   public constructor(
     field: FieldLike,
@@ -560,6 +720,7 @@ export class MovingTurretGroup {
     fragments: FragmentPoolLike,
     parent: EnemyLike,
   ) {
+    this.ship = ship;
     this.turret = Array.from(
       { length: MovingTurretGroup.MAX_NUM },
       () => new Turret(field, bullets, ship, sparks, smokes, fragments, parent),
@@ -588,29 +749,62 @@ export class MovingTurretGroup {
     }
 
     if (this.spec.moveType === MovingTurretGroupSpec.MoveType.ROLL) {
-      this.rollAmpCnt += this.spec.rollAmpVel;
-      this.deg += this.spec.rollDegVel + this.spec.rollAmp * Math.sin(this.rollAmpCnt);
+      if (this.spec.rollAmp !== 0) {
+        this.rollAmpCnt += this.spec.rollAmpVel;
+        const av = Math.sin(this.rollAmpCnt);
+        this.deg += this.spec.rollDegVel + this.spec.rollAmp * av;
+      } else {
+        this.deg += this.spec.rollDegVel;
+      }
     } else {
       this.swingAmpCnt += this.spec.swingAmpVel;
       this.swingAmpDeg += Math.cos(this.swingAmpCnt) > 0 ? this.spec.swingDegVel : -this.spec.swingDegVel;
-      const target = this.spec.moveType === MovingTurretGroupSpec.MoveType.SWING_AIM ? ed : this.swingFixDeg;
-      this.deg += normalizeDeg(target + this.swingAmpDeg - this.deg) * 0.1;
+      if (this.spec.moveType === MovingTurretGroupSpec.MoveType.SWING_AIM) {
+        const shipPos = this.ship.nearPos(this.centerPos);
+        let od: number;
+        if (shipPos.dist(this.centerPos) < 0.1) od = 0;
+        else od = Math.atan2(shipPos.x - this.centerPos.x, shipPos.y - this.centerPos.y);
+        od += this.swingAmpDeg - this.deg;
+        od = normalizeDeg(od);
+        this.deg += od * 0.1;
+      } else {
+        let od = this.swingFixDeg + this.swingAmpDeg - this.deg;
+        od = normalizeDeg(od);
+        this.deg += od * 0.1;
+      }
     }
 
-    this.alignAmpCnt += this.spec.alignAmpVel;
-    const ad = this.spec.alignDeg * (1 + Math.sin(this.alignAmpCnt) * this.spec.alignAmp);
-    const md = this.spec.num > 1 ? ad / (this.spec.moveType === MovingTurretGroupSpec.MoveType.ROLL ? this.spec.num : (this.spec.num - 1)) : 0;
-    let d = this.deg - md - ad / 2;
+    const { d0, md } = this.calcAlignDeg();
+    let d = d0;
 
     for (let i = 0; i < this.spec.num; i++) {
       d += md;
       const bx = Math.sin(d) * this.radius * this.spec.xReverse;
       const by = Math.cos(d) * this.radius * (1 - this.spec.distRatio);
-      const fs = Math.sqrt(bx * bx + by * by) * 0.06;
-      const fd = Math.abs(bx) + Math.abs(by) < 0.1 ? d : Math.atan2(bx, by);
+      let fs: number;
+      let fd: number;
+      if (Math.abs(bx) + Math.abs(by) < 0.1) {
+        fs = this.radius;
+        fd = d;
+      } else {
+        fs = Math.sqrt(bx * bx + by * by);
+        fd = Math.atan2(bx, by);
+      }
+      fs *= 0.06;
       this.turret[i].move(this.centerPos.x, this.centerPos.y, d, fs, fd);
     }
     this.cnt++;
+  }
+
+  private calcAlignDeg(): { d0: number; md: number } {
+    this.alignAmpCnt += this.spec.alignAmpVel;
+    const ad = this.spec.alignDeg * (1 + Math.sin(this.alignAmpCnt) * this.spec.alignAmp);
+    let md = 0;
+    if (this.spec.num > 1) {
+      if (this.spec.moveType === MovingTurretGroupSpec.MoveType.ROLL) md = ad / this.spec.num;
+      else md = ad / (this.spec.num - 1);
+    }
+    return { d0: this.deg - md - ad / 2, md };
   }
 
   public draw(): void {
