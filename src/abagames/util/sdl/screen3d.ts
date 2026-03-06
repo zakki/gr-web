@@ -161,9 +161,9 @@ export abstract class Screen3D implements Screen {
   private resetProjectionForResize(): void {
     const near = Screen3D.nearPlane;
     const far = Screen3D.farPlane;
-    const w = Math.max(1, Screen3D.width);
-    const h = Math.max(1, Screen3D.height);
-    const top = (near * h) / w;
+    // Keep the original 4:3 gameplay framing from the SDL version.
+    // Using the live viewport aspect here narrows vertical visibility on wide screens.
+    const top = (near * 480) / 640;
     const bottom = -top;
     const left = -near;
     const right = near;
