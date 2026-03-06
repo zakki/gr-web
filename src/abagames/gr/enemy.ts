@@ -342,7 +342,9 @@ export class EnemyState {
     if (this.damagedCnt > 0) this.damagedCnt--;
 
     let alive = false;
-    for (let i = 0; i < this.spec.turretGroupNum; i++) alive ||= this.turretGroup[i].move(this.pos, this.deg);
+    for (let i = 0; i < this.spec.turretGroupNum; i++) {
+      if (this.turretGroup[i].move(this.pos, this.deg)) alive = true;
+    }
     for (let i = 0; i < this.spec.movingTurretGroupNum; i++) this.movingTurretGroup[i].move(this.pos, this.deg);
 
     if (this.destroyedCnt < 0 && !alive) return this.destroyed();

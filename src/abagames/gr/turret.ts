@@ -623,14 +623,18 @@ export class TurretGroup {
     this.centerPos.x = p.x;
     this.centerPos.y = p.y;
     if (this.spec.alignType === TurretGroupSpec.AlignType.ROUND) {
-      let d = this.spec.alignDeg - (this.spec.alignWidth / 2);
-      const md = this.spec.num > 1 ? this.spec.alignWidth / (this.spec.num - 1) : 0;
+      let d = this.spec.alignDeg;
+      let md = 0;
+      if (this.spec.num > 1) {
+        md = this.spec.alignWidth / (this.spec.num - 1);
+        d -= this.spec.alignWidth / 2;
+      }
       for (let i = 0; i < this.spec.num; i++) {
         const tbx = Math.sin(d) * this.spec.radius * (1 - this.spec.distRatio);
         const tby = Math.cos(d) * this.spec.radius;
         const bx = tbx * Math.cos(-deg) - tby * Math.sin(-deg);
         const by = tbx * Math.sin(-deg) + tby * Math.cos(-deg);
-        alive ||= this.turret[i].move(this.centerPos.x + bx, this.centerPos.y + by, d + deg);
+        if (this.turret[i].move(this.centerPos.x + bx, this.centerPos.y + by, d + deg)) alive = true;
         d += md;
       }
     } else {
@@ -643,7 +647,7 @@ export class TurretGroup {
         const d = Math.atan2(tbx, tby);
         const bx = tbx * Math.cos(-deg) - tby * Math.sin(-deg);
         const by = tbx * Math.sin(-deg) + tby * Math.cos(-deg);
-        alive ||= this.turret[i].move(this.centerPos.x + bx, this.centerPos.y + by, d + deg);
+        if (this.turret[i].move(this.centerPos.x + bx, this.centerPos.y + by, d + deg)) alive = true;
       }
     }
     this.cnt++;
@@ -660,7 +664,9 @@ export class TurretGroup {
 
   public checkCollision(x: number, y: number, c: Collidable, shot: Shot): boolean {
     let col = false;
-    for (let i = 0; i < this.spec.num; i++) col ||= this.turret[i].checkCollision(x, y, c, shot);
+    for (let i = 0; i < this.spec.num; i++) {
+      if (this.turret[i].checkCollision(x, y, c, shot)) col = true;
+    }
     return col;
   }
 }
