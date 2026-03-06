@@ -42,8 +42,6 @@ export class Field {
   private static readonly SIDEWALL_Y = 15;
   private static readonly TIME_COLOR_INDEX = 5;
   private static readonly TIME_CHANGE_RATIO = 0.00033;
-  private static readonly PANEL_WIDTH = 1.8;
-  private static readonly PANEL_HEIGHT_BASE = 0.66;
   private static readonly DEG_BLOCK_OFS: ReadonlyArray<readonly [number, number]> = [
     [0, -1],
     [1, 0],
@@ -57,9 +55,12 @@ export class Field {
   private readonly _size: Vector;
   private readonly _outerSize: Vector;
 
-  private readonly screenBlockSizeX = 20;
-  private readonly screenBlockSizeY = 24;
-  private readonly blockWidth = 1;
+  private static readonly SCREEN_BLOCK_SIZE_X = 20;
+  private static readonly SCREEN_BLOCK_SIZE_Y = 24;
+  private static readonly BLOCK_WIDTH = 1;
+
+  private static readonly PANEL_WIDTH = 1.8;
+  private static readonly PANEL_HEIGHT_BASE = 0.66;
 
   private readonly block: number[][];
   private readonly panel: Panel[][];
@@ -119,11 +120,11 @@ export class Field {
   private time = 0;
 
   public constructor() {
-    this._size = new Vector((this.screenBlockSizeX / 2) * 0.9, (this.screenBlockSizeY / 2) * 0.8);
-    this._outerSize = new Vector(this.screenBlockSizeX / 2, this.screenBlockSizeY / 2);
+    this._size = new Vector((Field.SCREEN_BLOCK_SIZE_X / 2) * 0.9, (Field.SCREEN_BLOCK_SIZE_Y / 2) * 0.8);
+    this._outerSize = new Vector(Field.SCREEN_BLOCK_SIZE_X / 2, Field.SCREEN_BLOCK_SIZE_Y / 2);
     this.block = Array.from({ length: Field.BLOCK_SIZE_X }, () => Array<number>(Field.BLOCK_SIZE_Y).fill(-3));
     this.panel = Array.from({ length: Field.BLOCK_SIZE_X }, () => Array.from({ length: Field.BLOCK_SIZE_Y }, () => new Panel()));
-    this.platformPos = Array.from({ length: this.screenBlockSizeX * Field.NEXT_BLOCK_AREA_SIZE }, () => new PlatformPos());
+    this.platformPos = Array.from({ length: Field.SCREEN_BLOCK_SIZE_X * Field.NEXT_BLOCK_AREA_SIZE }, () => new PlatformPos());
   }
 
   public setRandSeed(seed: number): void {
@@ -151,6 +152,17 @@ export class Field {
       }
     }
     this.time = this.rand.nextFloat(Field.TIME_COLOR_INDEX);
+  }
+
+  private createPanel(x: number, y: number): void {
+    const p = this.panel[x][y];
+    p.x = this.rand.nextFloat(1) - 0.75;
+    p.y = this.rand.nextFloat(1) - 0.75;
+    p.z = this.block[x][y] * Field.PANEL_HEIGHT_BASE + this.rand.nextFloat(Field.PANEL_HEIGHT_BASE);
+    p.ci = this.block[x][y] + 3;
+    p.or = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
+    p.og = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
+    p.ob = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
   }
 
   public scroll(my: number, isDemo = false): void {
@@ -324,8 +336,8 @@ export class Field {
     if (yy == null) return -1;
 
     const fy = yy - (this.screenY - Math.trunc(this.screenY));
-    const bx = Math.trunc((x + (this.blockWidth * this.screenBlockSizeX) / 2) / this.blockWidth);
-    let by = Math.trunc(this.screenY) + Math.trunc((-fy + (this.blockWidth * this.screenBlockSizeY) / 2) / this.blockWidth);
+    const bx = Math.trunc((x + (Field.BLOCK_WIDTH * Field.SCREEN_BLOCK_SIZE_X) / 2) / Field.BLOCK_WIDTH);
+    let by = Math.trunc(this.screenY) + Math.trunc((-fy + (Field.BLOCK_WIDTH * Field.SCREEN_BLOCK_SIZE_Y) / 2) / Field.BLOCK_WIDTH);
 
     if (bx < 0 || bx >= Field.BLOCK_SIZE_X) return -1;
     if (by < 0) by += Field.BLOCK_SIZE_Y;
@@ -340,8 +352,8 @@ export class Field {
     if (by <= -Field.BLOCK_SIZE_Y) by += Field.BLOCK_SIZE_Y;
     if (by > 0) by -= Field.BLOCK_SIZE_Y;
 
-    this.screenPos.x = bx * this.blockWidth - (this.blockWidth * this.screenBlockSizeX) / 2 + this.blockWidth / 2;
-    this.screenPos.y = by * -this.blockWidth + (this.blockWidth * this.screenBlockSizeY) / 2 + oy - this.blockWidth / 2;
+    this.screenPos.x = bx * Field.BLOCK_WIDTH - (Field.BLOCK_WIDTH * Field.SCREEN_BLOCK_SIZE_X) / 2 + Field.BLOCK_WIDTH / 2;
+    this.screenPos.y = by * -Field.BLOCK_WIDTH + (Field.BLOCK_WIDTH * Field.SCREEN_BLOCK_SIZE_Y) / 2 + oy - Field.BLOCK_WIDTH / 2;
     return this.screenPos;
   }
 
@@ -387,16 +399,16 @@ export class Field {
 
     let by = Math.trunc(this.screenY);
     const oy = this.screenY - by;
-    let sy = (this.blockWidth * this.screenBlockSizeY) / 2 + oy;
+    let sy = (Field.BLOCK_WIDTH * Field.SCREEN_BLOCK_SIZE_Y) / 2 + oy;
     by--;
     if (by < 0) by += Field.BLOCK_SIZE_Y;
-    sy += this.blockWidth;
+    sy += Field.BLOCK_WIDTH;
 
     Screen3D.glBegin(Screen3D.GL_QUADS);
-    for (let y = -1; y < this.screenBlockSizeY + Field.NEXT_BLOCK_AREA_SIZE; y++) {
+    for (let y = -1; y < Field.SCREEN_BLOCK_SIZE_Y + Field.NEXT_BLOCK_AREA_SIZE; y++) {
       if (by >= Field.BLOCK_SIZE_Y) by -= Field.BLOCK_SIZE_Y;
-      let sx = (-this.blockWidth * this.screenBlockSizeX) / 2;
-      for (let bx = 0; bx < this.screenBlockSizeX; bx++) {
+      let sx = (-Field.BLOCK_WIDTH * Field.SCREEN_BLOCK_SIZE_X) / 2;
+      for (let bx = 0; bx < Field.SCREEN_BLOCK_SIZE_X; bx++) {
         const p = this.panel[bx][by];
 
         Screen.setColor(this.baseColor[p.ci][0] * p.or * 0.66, this.baseColor[p.ci][1] * p.og * 0.66, this.baseColor[p.ci][2] * p.ob * 0.66);
@@ -407,13 +419,13 @@ export class Field {
 
         Screen.setColor(this.baseColor[p.ci][0] * 0.33, this.baseColor[p.ci][1] * 0.33, this.baseColor[p.ci][2] * 0.33);
         Screen3D.glVertex3f(sx, sy, 0);
-        Screen3D.glVertex3f(sx + this.blockWidth, sy, 0);
-        Screen3D.glVertex3f(sx + this.blockWidth, sy - this.blockWidth, 0);
-        Screen3D.glVertex3f(sx, sy - this.blockWidth, 0);
+        Screen3D.glVertex3f(sx + Field.BLOCK_WIDTH, sy, 0);
+        Screen3D.glVertex3f(sx + Field.BLOCK_WIDTH, sy - Field.BLOCK_WIDTH, 0);
+        Screen3D.glVertex3f(sx, sy - Field.BLOCK_WIDTH, 0);
 
-        sx += this.blockWidth;
+        sx += Field.BLOCK_WIDTH;
       }
-      sy -= this.blockWidth;
+      sy -= Field.BLOCK_WIDTH;
       by++;
     }
     Screen3D.glEnd();
@@ -461,17 +473,6 @@ export class Field {
     if (by < 0) by += Field.BLOCK_SIZE_Y;
     if (by >= Field.BLOCK_SIZE_Y) by -= Field.BLOCK_SIZE_Y;
     return this.block[x][by] >= th;
-  }
-
-  private createPanel(x: number, y: number): void {
-    const p = this.panel[x][y];
-    p.x = this.rand.nextFloat(1) - 0.75;
-    p.y = this.rand.nextFloat(1) - 0.75;
-    p.z = this.block[x][y] * Field.PANEL_HEIGHT_BASE + this.rand.nextFloat(Field.PANEL_HEIGHT_BASE);
-    p.ci = this.block[x][y] + 3;
-    p.or = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
-    p.og = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
-    p.ob = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
   }
 
   public checkInField(p: Vector): boolean;
