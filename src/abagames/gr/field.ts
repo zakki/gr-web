@@ -5,19 +5,12 @@
  */
 
 import { Vector } from "../util/vector";
-import { Screen3D } from "../util/sdl/screen3d";
 import { Rand } from "../util/rand";
+import { MathUtil } from "../util/math";
+import { Screen3D } from "../util/sdl/screen3d";
 import { Screen } from "./screen";
-
-
-type StageManagerLike = {
-  gotoNextBlockArea(): void;
-  addBatteries(platformPos: PlatformPos[], platformPosNum: number): void;
-  readonly bossMode: boolean;
-  readonly blockDensity: number;
-};
-
-type ShipLike = unknown;
+import type { StageManager } from "./stagemanager";
+import type { Ship } from "./ship";
 
 export class PlatformPos {
   public pos = new Vector();
@@ -25,7 +18,7 @@ export class PlatformPos {
   public used = false;
 }
 
-export class Panel {
+class Panel {
   public x = 0;
   public y = 0;
   public z = 0;
@@ -43,43 +36,105 @@ export class Field {
   public static readonly BLOCK_SIZE_Y = 64;
   public static readonly ON_BLOCK_THRESHOLD = 1;
   public static readonly NEXT_BLOCK_AREA_SIZE = 16;
+
   private static readonly SIDEWALL_X1 = 18;
   private static readonly SIDEWALL_X2 = 9.3;
   private static readonly SIDEWALL_Y = 15;
+  private static readonly TIME_COLOR_INDEX = 5;
+  private static readonly TIME_CHANGE_RATIO = 0.00033;
+  private static readonly PANEL_WIDTH = 1.8;
+  private static readonly PANEL_HEIGHT_BASE = 0.66;
+  private static readonly DEG_BLOCK_OFS: ReadonlyArray<readonly [number, number]> = [
+    [0, -1],
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+  ];
 
-  private stageManager!: StageManagerLike;
-  private ship!: ShipLike;
+  private stageManager!: StageManager;
+  private ship!: Ship;
   private readonly rand = new Rand();
-  private readonly _size = new Vector(9, 9.6);
-  private readonly _outerSize = new Vector(10, 12);
+  private readonly _size: Vector;
+  private readonly _outerSize: Vector;
+
   private readonly screenBlockSizeX = 20;
   private readonly screenBlockSizeY = 24;
   private readonly blockWidth = 1;
-  private block: number[][];
-  private panel: Panel[][];
+
+  private readonly block: number[][];
+  private readonly panel: Panel[][];
+
   private nextBlockY = 0;
   private screenY = Field.NEXT_BLOCK_AREA_SIZE;
   private blockCreateCnt = 0;
   private _lastScrollY = 0;
   private readonly screenPos = new Vector();
-  public platformPos: PlatformPos[];
+
+  public readonly platformPos: PlatformPos[];
   public platformPosNum = 0;
 
+  private readonly baseColorTime: number[][][] = [
+    [
+      [0.15, 0.15, 0.3],
+      [0.25, 0.25, 0.5],
+      [0.35, 0.35, 0.45],
+      [0.6, 0.7, 0.35],
+      [0.45, 0.8, 0.3],
+      [0.2, 0.6, 0.1],
+    ],
+    [
+      [0.1, 0.1, 0.3],
+      [0.2, 0.2, 0.5],
+      [0.3, 0.3, 0.4],
+      [0.5, 0.65, 0.35],
+      [0.4, 0.7, 0.3],
+      [0.1, 0.5, 0.1],
+    ],
+    [
+      [0.1, 0.1, 0.3],
+      [0.2, 0.2, 0.5],
+      [0.3, 0.3, 0.4],
+      [0.5, 0.65, 0.35],
+      [0.4, 0.7, 0.3],
+      [0.1, 0.5, 0.1],
+    ],
+    [
+      [0.2, 0.15, 0.25],
+      [0.35, 0.2, 0.4],
+      [0.5, 0.35, 0.45],
+      [0.7, 0.6, 0.3],
+      [0.6, 0.65, 0.25],
+      [0.2, 0.45, 0.1],
+    ],
+    [
+      [0.0, 0.0, 0.1],
+      [0.1, 0.1, 0.3],
+      [0.2, 0.2, 0.3],
+      [0.2, 0.3, 0.15],
+      [0.2, 0.2, 0.1],
+      [0.0, 0.15, 0.0],
+    ],
+  ];
+  private readonly baseColor: number[][] = Array.from({ length: 6 }, () => [0, 0, 0]);
+  private time = 0;
+
   public constructor() {
-    this.block = Array.from({ length: Field.BLOCK_SIZE_X }, () => Array(Field.BLOCK_SIZE_Y).fill(-3));
+    this._size = new Vector((this.screenBlockSizeX / 2) * 0.9, (this.screenBlockSizeY / 2) * 0.8);
+    this._outerSize = new Vector(this.screenBlockSizeX / 2, this.screenBlockSizeY / 2);
+    this.block = Array.from({ length: Field.BLOCK_SIZE_X }, () => Array<number>(Field.BLOCK_SIZE_Y).fill(-3));
     this.panel = Array.from({ length: Field.BLOCK_SIZE_X }, () => Array.from({ length: Field.BLOCK_SIZE_Y }, () => new Panel()));
     this.platformPos = Array.from({ length: this.screenBlockSizeX * Field.NEXT_BLOCK_AREA_SIZE }, () => new PlatformPos());
   }
 
-  public setRandSeed(s: number): void {
-    this.rand.setSeed(s);
+  public setRandSeed(seed: number): void {
+    this.rand.setSeed(seed);
   }
 
-  public setStageManager(sm: StageManagerLike): void {
+  public setStageManager(sm: StageManager): void {
     this.stageManager = sm;
   }
 
-  public setShip(sp: ShipLike): void {
+  public setShip(sp: Ship): void {
     this.ship = sp;
     void this.ship;
   }
@@ -95,12 +150,14 @@ export class Field {
         this.createPanel(x, y);
       }
     }
+    this.time = this.rand.nextFloat(Field.TIME_COLOR_INDEX);
   }
 
   public scroll(my: number, isDemo = false): void {
     this._lastScrollY = my;
     this.screenY -= my;
     if (this.screenY < 0) this.screenY += Field.BLOCK_SIZE_Y;
+
     this.blockCreateCnt -= my;
     if (this.blockCreateCnt < 0) {
       this.stageManager.gotoNextBlockArea();
@@ -113,36 +170,141 @@ export class Field {
 
   private createBlocks(groundDensity: number): void {
     for (let y = this.nextBlockY; y < this.nextBlockY + Field.NEXT_BLOCK_AREA_SIZE; y++) {
-      const by = this.wrapY(y);
+      const by = y % Field.BLOCK_SIZE_Y;
       for (let bx = 0; bx < Field.BLOCK_SIZE_X; bx++) this.block[bx][by] = -3;
     }
 
     this.platformPosNum = 0;
-    for (let i = 0; i < groundDensity; i++) this.addGround();
+    const type = this.rand.nextInt(3);
+    for (let i = 0; i < groundDensity; i++) this.addGround(type);
 
     for (let y = this.nextBlockY; y < this.nextBlockY + Field.NEXT_BLOCK_AREA_SIZE; y++) {
-      const by = this.wrapY(y);
-      for (let bx = 0; bx < Field.BLOCK_SIZE_X; bx++) this.createPanel(bx, by);
+      const by = y % Field.BLOCK_SIZE_Y;
+      for (let bx = 0; bx < Field.BLOCK_SIZE_X; bx++) {
+        if (y === this.nextBlockY || y === this.nextBlockY + Field.NEXT_BLOCK_AREA_SIZE - 1) this.block[bx][by] = -3;
+      }
+    }
+
+    for (let y = this.nextBlockY; y < this.nextBlockY + Field.NEXT_BLOCK_AREA_SIZE; y++) {
+      const by = y % Field.BLOCK_SIZE_Y;
+
+      for (let bx = 0; bx < Field.BLOCK_SIZE_X - 1; bx++) {
+        if (this.block[bx][by] === 0 && this.countAroundBlock(bx, by) <= 1) this.block[bx][by] = -2;
+      }
+
+      for (let bx = Field.BLOCK_SIZE_X - 1; bx >= 0; bx--) {
+        if (this.block[bx][by] === 0 && this.countAroundBlock(bx, by) <= 1) this.block[bx][by] = -2;
+      }
+
+      for (let bx = 0; bx < Field.BLOCK_SIZE_X; bx++) {
+        const c = this.countAroundBlock(bx, by);
+        let b = this.block[bx][by];
+
+        if (this.block[bx][by] >= 0) {
+          switch (c) {
+            case 0:
+              b = -2;
+              break;
+            case 1:
+            case 2:
+            case 3:
+              b = 0;
+              break;
+            case 4:
+              b = 2;
+              break;
+          }
+        } else {
+          switch (c) {
+            case 0:
+              b = -3;
+              break;
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+              b = -1;
+              break;
+          }
+        }
+
+        this.block[bx][by] = b;
+
+        if (b === -1 && bx >= 2 && bx < Field.BLOCK_SIZE_X - 2) {
+          const pd = this.calcPlatformDeg(bx, by);
+          if (pd >= -Math.PI * 2) {
+            this.platformPos[this.platformPosNum].pos.x = bx;
+            this.platformPos[this.platformPosNum].pos.y = by;
+            this.platformPos[this.platformPosNum].deg = pd;
+            this.platformPos[this.platformPosNum].used = false;
+            this.platformPosNum++;
+          }
+        }
+      }
+    }
+
+    for (let y = this.nextBlockY; y < this.nextBlockY + Field.NEXT_BLOCK_AREA_SIZE; y++) {
+      const by = y % Field.BLOCK_SIZE_Y;
+      for (let bx = 0; bx < Field.BLOCK_SIZE_X; bx++) {
+        if (this.block[bx][by] === -3) {
+          if (this.countAroundBlock(bx, by, -1) > 0) this.block[bx][by] = -2;
+        } else if (this.block[bx][by] === 2) {
+          if (this.countAroundBlock(bx, by, 1) < 4) this.block[bx][by] = 1;
+        }
+        this.createPanel(bx, by);
+      }
     }
   }
 
-  private addGround(): void {
-    const cx = this.rand.nextInt(Math.trunc(Field.BLOCK_SIZE_X * 0.8)) + 2;
-    const cy = this.rand.nextInt(Math.trunc(Field.NEXT_BLOCK_AREA_SIZE * 0.8)) + this.nextBlockY;
-    const w = this.rand.nextInt(6) + 5;
-    const h = this.rand.nextInt(5) + 4;
-    for (let y = cy - Math.trunc(h / 2); y < cy + Math.trunc(h / 2); y++) {
-      const by = this.wrapY(y);
-      for (let x = cx - Math.trunc(w / 2); x < cx + Math.trunc(w / 2); x++) {
-        if (x < 0 || x >= Field.BLOCK_SIZE_X) continue;
-        this.block[x][by] = 0;
-        if (this.rand.nextInt(5) === 0 && x >= 2 && x < Field.BLOCK_SIZE_X - 2) {
-          const pp = this.platformPos[this.platformPosNum];
-          pp.pos.x = x;
-          pp.pos.y = by;
-          pp.deg = (this.rand.nextInt(8) * Math.PI) / 4;
-          pp.used = false;
-          this.platformPosNum = Math.min(this.platformPos.length, this.platformPosNum + 1);
+  private addGround(type: number): void {
+    let cx: number;
+    switch (type) {
+      case 0:
+        cx = this.rand.nextInt(Math.trunc(Field.BLOCK_SIZE_X * 0.4)) + Math.trunc(Field.BLOCK_SIZE_X * 0.1);
+        break;
+      case 1:
+        cx = this.rand.nextInt(Math.trunc(Field.BLOCK_SIZE_X * 0.4)) + Math.trunc(Field.BLOCK_SIZE_X * 0.5);
+        break;
+      case 2:
+      default:
+        if (this.rand.nextInt(2) === 0) cx = this.rand.nextInt(Math.trunc(Field.BLOCK_SIZE_X * 0.4)) - Math.trunc(Field.BLOCK_SIZE_X * 0.2);
+        else cx = this.rand.nextInt(Math.trunc(Field.BLOCK_SIZE_X * 0.4)) + Math.trunc(Field.BLOCK_SIZE_X * 0.8);
+        break;
+    }
+
+    let cy = this.rand.nextInt(Math.trunc(Field.NEXT_BLOCK_AREA_SIZE * 0.6)) + Math.trunc(Field.NEXT_BLOCK_AREA_SIZE * 0.2);
+    cy += this.nextBlockY;
+
+    const w = this.rand.nextInt(Math.trunc(Field.BLOCK_SIZE_X * 0.33)) + Math.trunc(Field.BLOCK_SIZE_X * 0.33);
+    const h = this.rand.nextInt(Math.trunc(Field.NEXT_BLOCK_AREA_SIZE * 0.24)) + Math.trunc(Field.NEXT_BLOCK_AREA_SIZE * 0.33);
+
+    cx -= Math.trunc(w / 2);
+    cy -= Math.trunc(h / 2);
+
+    for (let y = this.nextBlockY; y < this.nextBlockY + Field.NEXT_BLOCK_AREA_SIZE; y++) {
+      const by = y % Field.BLOCK_SIZE_Y;
+      for (let bx = 0; bx < Field.BLOCK_SIZE_X; bx++) {
+        if (bx >= cx && bx < cx + w && y >= cy && y < cy + h) {
+          let wr = this.rand.nextFloat(0.2) + 0.2;
+          let hr = this.rand.nextFloat(0.3) + 0.4;
+          let o = (bx - cx) * wr + (y - cy) * hr;
+
+          wr = this.rand.nextFloat(0.2) + 0.2;
+          hr = this.rand.nextFloat(0.3) + 0.4;
+          let to = (cx + w - 1 - bx) * wr + (y - cy) * hr;
+          if (to < o) o = to;
+
+          wr = this.rand.nextFloat(0.2) + 0.2;
+          hr = this.rand.nextFloat(0.3) + 0.4;
+          to = (bx - cx) * wr + (cy + h - 1 - y) * hr;
+          if (to < o) o = to;
+
+          wr = this.rand.nextFloat(0.2) + 0.2;
+          hr = this.rand.nextFloat(0.3) + 0.4;
+          to = (cx + w - 1 - bx) * wr + (cy + h - 1 - y) * hr;
+          if (to < o) o = to;
+
+          if (o > 1) this.block[bx][by] = 0;
         }
       }
     }
@@ -154,15 +316,21 @@ export class Field {
     if (this.nextBlockY < 0) this.nextBlockY += Field.BLOCK_SIZE_Y;
   }
 
+  public getBlock(p: Vector): number;
+  public getBlock(x: number, y: number): number;
   public getBlock(arg0: Vector | number, y?: number): number {
     const x = arg0 instanceof Vector ? arg0.x : arg0;
     const yy = arg0 instanceof Vector ? arg0.y : y;
     if (yy == null) return -1;
-    const oy = yy - (this.screenY - Math.trunc(this.screenY));
+
+    const fy = yy - (this.screenY - Math.trunc(this.screenY));
     const bx = Math.trunc((x + (this.blockWidth * this.screenBlockSizeX) / 2) / this.blockWidth);
-    let by = Math.trunc(this.screenY) + Math.trunc((-oy + (this.blockWidth * this.screenBlockSizeY) / 2) / this.blockWidth);
+    let by = Math.trunc(this.screenY) + Math.trunc((-fy + (this.blockWidth * this.screenBlockSizeY) / 2) / this.blockWidth);
+
     if (bx < 0 || bx >= Field.BLOCK_SIZE_X) return -1;
-    by = this.wrapY(by);
+    if (by < 0) by += Field.BLOCK_SIZE_Y;
+    else if (by >= Field.BLOCK_SIZE_Y) by -= Field.BLOCK_SIZE_Y;
+
     return this.block[bx][by];
   }
 
@@ -171,12 +339,16 @@ export class Field {
     let by = y - Math.trunc(this.screenY);
     if (by <= -Field.BLOCK_SIZE_Y) by += Field.BLOCK_SIZE_Y;
     if (by > 0) by -= Field.BLOCK_SIZE_Y;
+
     this.screenPos.x = bx * this.blockWidth - (this.blockWidth * this.screenBlockSizeX) / 2 + this.blockWidth / 2;
     this.screenPos.y = by * -this.blockWidth + (this.blockWidth * this.screenBlockSizeY) / 2 + oy - this.blockWidth / 2;
     return this.screenPos;
   }
 
-  public move(): void {}
+  public move(): void {
+    this.time += Field.TIME_CHANGE_RATIO;
+    if (this.time >= Field.TIME_COLOR_INDEX) this.time -= Field.TIME_COLOR_INDEX;
+  }
 
   public draw(): void {
     this.drawPanel();
@@ -191,6 +363,7 @@ export class Field {
     Screen3D.glVertex3f(Field.SIDEWALL_X2, -Field.SIDEWALL_Y, 0);
     Screen3D.glVertex3f(Field.SIDEWALL_X1, -Field.SIDEWALL_Y, 0);
     Screen3D.glEnd();
+
     Screen3D.glBegin(Screen3D.GL_TRIANGLE_FAN);
     Screen3D.glVertex3f(-Field.SIDEWALL_X1, Field.SIDEWALL_Y, 0);
     Screen3D.glVertex3f(-Field.SIDEWALL_X2, Field.SIDEWALL_Y, 0);
@@ -201,46 +374,76 @@ export class Field {
   }
 
   private drawPanel(): void {
+    const ci = Math.trunc(this.time);
+    let nci = ci + 1;
+    if (nci >= Field.TIME_COLOR_INDEX) nci = 0;
+    const co = this.time - ci;
+
+    for (let i = 0; i < 6; i++) {
+      for (let j = 0; j < 3; j++) {
+        this.baseColor[i][j] = this.baseColorTime[ci][i][j] * (1 - co) + this.baseColorTime[nci][i][j] * co;
+      }
+    }
+
     let by = Math.trunc(this.screenY);
-    let oy = this.screenY - by;
+    const oy = this.screenY - by;
     let sy = (this.blockWidth * this.screenBlockSizeY) / 2 + oy;
-    by = this.wrapY(by - 1);
+    by--;
+    if (by < 0) by += Field.BLOCK_SIZE_Y;
     sy += this.blockWidth;
+
     Screen3D.glBegin(Screen3D.GL_QUADS);
     for (let y = -1; y < this.screenBlockSizeY + Field.NEXT_BLOCK_AREA_SIZE; y++) {
+      if (by >= Field.BLOCK_SIZE_Y) by -= Field.BLOCK_SIZE_Y;
       let sx = (-this.blockWidth * this.screenBlockSizeX) / 2;
       for (let bx = 0; bx < this.screenBlockSizeX; bx++) {
         const p = this.panel[bx][by];
-        const c = p.ci <= 0 ? 0.2 : p.ci === 1 ? 0.35 : 0.5;
-        Screen.setColor(c * p.or, c * p.og, c * p.ob);
+
+        Screen.setColor(this.baseColor[p.ci][0] * p.or * 0.66, this.baseColor[p.ci][1] * p.og * 0.66, this.baseColor[p.ci][2] * p.ob * 0.66);
         Screen3D.glVertex3f(sx + p.x, sy - p.y, p.z);
-        Screen3D.glVertex3f(sx + p.x + 1.8, sy - p.y, p.z);
-        Screen3D.glVertex3f(sx + p.x + 1.8, sy - p.y - 1.8, p.z);
-        Screen3D.glVertex3f(sx + p.x, sy - p.y - 1.8, p.z);
+        Screen3D.glVertex3f(sx + p.x + Field.PANEL_WIDTH, sy - p.y, p.z);
+        Screen3D.glVertex3f(sx + p.x + Field.PANEL_WIDTH, sy - p.y - Field.PANEL_WIDTH, p.z);
+        Screen3D.glVertex3f(sx + p.x, sy - p.y - Field.PANEL_WIDTH, p.z);
+
+        Screen.setColor(this.baseColor[p.ci][0] * 0.33, this.baseColor[p.ci][1] * 0.33, this.baseColor[p.ci][2] * 0.33);
+        Screen3D.glVertex3f(sx, sy, 0);
+        Screen3D.glVertex3f(sx + this.blockWidth, sy, 0);
+        Screen3D.glVertex3f(sx + this.blockWidth, sy - this.blockWidth, 0);
+        Screen3D.glVertex3f(sx, sy - this.blockWidth, 0);
+
         sx += this.blockWidth;
       }
       sy -= this.blockWidth;
-      by = this.wrapY(by + 1);
+      by++;
     }
     Screen3D.glEnd();
   }
 
-  private createPanel(x: number, y: number): void {
-    const p = this.panel[x][y];
-    p.x = this.rand.nextFloat(1) - 0.75;
-    p.y = this.rand.nextFloat(1) - 0.75;
-    p.z = this.block[x][y] * 0.66 + this.rand.nextFloat(0.66);
-    p.ci = this.block[x][y] + 3;
-    p.or = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
-    p.og = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
-    p.ob = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
-  }
+  private calcPlatformDeg(x: number, y: number): number {
+    let d = this.rand.nextInt(4);
+    for (let i = 0; i < 4; i++) {
+      if (!this.checkBlock(x + Field.DEG_BLOCK_OFS[d][0], y + Field.DEG_BLOCK_OFS[d][1], -1, true)) {
+        let pd = (d * Math.PI) / 2;
+        const ox = x + Field.DEG_BLOCK_OFS[d][0];
+        const oy = y + Field.DEG_BLOCK_OFS[d][1];
 
-  private wrapY(y: number): number {
-    let by = y;
-    while (by < 0) by += Field.BLOCK_SIZE_Y;
-    while (by >= Field.BLOCK_SIZE_Y) by -= Field.BLOCK_SIZE_Y;
-    return by;
+        let td = d - 1;
+        if (td < 0) td = 3;
+        const b1 = this.checkBlock(ox + Field.DEG_BLOCK_OFS[td][0], oy + Field.DEG_BLOCK_OFS[td][1], -1, true);
+
+        td = d + 1;
+        if (td >= 4) td = 0;
+        const b2 = this.checkBlock(ox + Field.DEG_BLOCK_OFS[td][0], oy + Field.DEG_BLOCK_OFS[td][1], -1, true);
+
+        if (!b1 && b2) pd -= Math.PI / 4;
+        if (b1 && !b2) pd += Math.PI / 4;
+        pd = MathUtil.normalizeDeg(pd);
+        return pd;
+      }
+      d++;
+      if (d >= 4) d = 0;
+    }
+    return -99999;
   }
 
   public countAroundBlock(x: number, y: number, th = 0): number {
@@ -254,9 +457,25 @@ export class Field {
 
   private checkBlock(x: number, y: number, th = 0, outScreen = false): boolean {
     if (x < 0 || x >= Field.BLOCK_SIZE_X) return outScreen;
-    return this.block[x][this.wrapY(y)] >= th;
+    let by = y;
+    if (by < 0) by += Field.BLOCK_SIZE_Y;
+    if (by >= Field.BLOCK_SIZE_Y) by -= Field.BLOCK_SIZE_Y;
+    return this.block[x][by] >= th;
   }
 
+  private createPanel(x: number, y: number): void {
+    const p = this.panel[x][y];
+    p.x = this.rand.nextFloat(1) - 0.75;
+    p.y = this.rand.nextFloat(1) - 0.75;
+    p.z = this.block[x][y] * Field.PANEL_HEIGHT_BASE + this.rand.nextFloat(Field.PANEL_HEIGHT_BASE);
+    p.ci = this.block[x][y] + 3;
+    p.or = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
+    p.og = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
+    p.ob = (1 + this.rand.nextSignedFloat(0.1)) * 0.33;
+  }
+
+  public checkInField(p: Vector): boolean;
+  public checkInField(x: number, y: number): boolean;
   public checkInField(arg0: Vector | number, y?: number): boolean {
     const x = arg0 instanceof Vector ? arg0.x : arg0;
     const yy = arg0 instanceof Vector ? arg0.y : y;
@@ -264,6 +483,8 @@ export class Field {
     return x >= -this._size.x && x <= this._size.x && yy >= -this._size.y && yy <= this._size.y;
   }
 
+  public checkInOuterField(p: Vector): boolean;
+  public checkInOuterField(x: number, y: number): boolean;
   public checkInOuterField(arg0: Vector | number, y?: number): boolean {
     const x = arg0 instanceof Vector ? arg0.x : arg0;
     const yy = arg0 instanceof Vector ? arg0.y : y;
